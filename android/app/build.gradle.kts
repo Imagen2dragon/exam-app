@@ -15,9 +15,11 @@ android {
         applicationId = "et.tibeb.examprep"
         minSdk = 24          // Android 7.0+: covers almost every phone still in use in Ethiopia
         targetSdk = 36
-        // CI passes the version from the git tag (v0.4.0 -> name 0.4.0, code 400); local builds use the defaults.
-        versionName = (findProperty("tibebVersionName") as String?) ?: "0.3.0"
-        versionCode = (findProperty("tibebVersionCode") as String?)?.toInt() ?: 3
+        // Single source of truth: version.txt at the repo root (0.4.0 -> versionCode 400).
+        val v = rootProject.file("../version.txt").readText().trim()
+        val (major, minor, patch) = v.split(".").map { it.toInt() }
+        versionName = v
+        versionCode = major * 10000 + minor * 100 + patch
         vectorDrawables.useSupportLibrary = true
     }
 

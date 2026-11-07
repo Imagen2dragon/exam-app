@@ -136,3 +136,11 @@ Android phone (1.4 MB APK, Android 7+)              Your server (small VPS)     
 - ✅ **Overnight question packs**: 50–200 new questions written through the Message Batches API at **half price**, collected in the background and added to the offline bank for offline exams and mocks.
 
 **Step 4 is complete.** Next (chosen by the owner): **Supabase** (accounts, cloud backup, shared packs for classmates, progress dashboard), then an **on-phone offline tutor**, then Step 5 (hardening: encrypted database, certificate pinning, accessibility pass on a low-end phone, exam focus lock).
+
+## 10. Admin app and deployment (v0.8.0)
+- **Progress sharing** (phone → server): a summary of results, mock scores, topic mastery, open mistakes, streak and book titles, every 6 hours and after each exam. The student is told on Home and in Settings. Notes and tutor chats are never shared.
+- **Admin API** on the server, protected by its own `ADMIN_TOKEN` (phones never have it), with a lockout after 10 wrong keys. Keeps one snapshot per day for 400 days.
+- **Tibeb Admin for Windows** (MSI): overview, charts over time, topics, exams and mocks, study calendar, AI cost per day and per feature against the budget, books. The key is stored with Windows DPAPI.
+- **Deploy kit:** Docker + Caddy (automatic HTTPS), a locked-down container, backups, a smoke test that makes one real call per AI feature and prints the cost. Guide: [`DEPLOY.md`](DEPLOY.md).
+
+Part of the Supabase plan (a progress dashboard) is now covered by the admin app on your own server. Supabase remains the option for accounts, cloud backup and sharing packs with classmates.

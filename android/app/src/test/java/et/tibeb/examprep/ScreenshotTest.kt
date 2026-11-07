@@ -40,6 +40,10 @@ open class ScreenshotTest {
             docType = "textbook", status = "ready", summary = "Introduction to limits and continuity: limits of sequences, limits of functions, continuity and the intermediate value theorem."))
         dao.insert(Document(title = "ESSLCE Physics 2016 E.C.", subject = "Physics", grade = 12, docType = "past_exam", status = "ready",
             summary = "Past national exam paper, 60 multiple-choice questions with answers."))
+        dao.insert(Document(title = "Biology Grade 11 – Unit 2 (photos)", subject = "Biology", grade = 11, docType = "textbook",
+            status = "queued", error = "No connection to the server. Offline features still work."))
+        dao.insert(Document(title = "Chemistry 2015 E.C. national exam", subject = "Chemistry", grade = 12, docType = "past_exam",
+            status = "failed", error = "Device token rejected. Check it in Settings."))
         dao.insertChunks(List(42) { Chunk(docId = doc, subject = "Mathematics", grade = 12, unit = "Unit 3", topic = "Limits", text = "…") })
         dao.insert(Note(subject = "Physics", topic = "Projectile motion", title = "Projectile motion – revision notes",
             markdown = "# Projectile motion\n## Key ideas\n- Horizontal velocity is **constant**: `vx = v0 cos θ`\n- Vertical motion has acceleration **g = 9.8 m/s²** downward\n## Exam traps\n- Time of flight depends only on the **vertical** component\n- At the top, speed is **not zero** – only vy is zero"))

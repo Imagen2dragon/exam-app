@@ -46,7 +46,11 @@
     <string name="home_stream_natural">የተፈጥሮ ሳይንስ ዘርፍ</string>
     <string name="home_stream_social">የማኅበራዊ ሳይንስ ዘርፍ</string>
     <string name="lib_intro">የመማሪያ መጻሕፍትን፣ ያለፉ ብሔራዊ ፈተናዎችንና ሙከራዎችን ይጫኑ። ጥበብ አንድ ጊዜ አንብቦ ጽሑፉን ብቻ ያስቀምጣል፤ ከዚያም ያለ ኢንተርኔት ያስጠናዎታል።</string>
-    <string name="lib_reading">“%1$s” በማንበብ ላይ… ትልልቅ መጻሕፍት ጥቂት ደቂቃዎች ሊወስዱ ይችላሉ</string>
+    <string name="lib_queued">ለመጫን በመጠባበቅ ላይ። መተግበሪያውን ቢዘጉትም ኢንተርኔት ሲገኝ በራሱ ይቀጥላል።</string>
+    <string name="lib_reading_now">በማንበብ ላይ… ትልልቅ መጻሕፍት ጥቂት ደቂቃዎች ይወስዳሉ። መተግበሪያውን መዝጋት ይችላሉ።</string>
+    <string name="lib_retry">እንደገና ሞክር</string>
+    <string name="lib_interrupted">መጫኑ ተቋርጧል። አጥፍተው እንደገና ይጫኑ።</string>
+    <string name="lib_last_error">የመጨረሻው ሙከራ፦ %1$s</string>
     <string name="lib_empty_title">እስካሁን ምንም የለም</string>
     <string name="lib_empty_body">የመጀመሪያ መጽሐፍዎን ወይም ያለፈ ፈተናዎን (PDF ወይም ፎቶ) ለመጨመር «ጫን»ን ይንኩ።</string>
     <string name="lib_delete_desc">%1$sን አጥፋ</string>

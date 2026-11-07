@@ -80,10 +80,9 @@ fun LibraryScreen() {
                 Text(stringResource(R.string.tab_library), style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 20.dp))
                 Text(stringResource(R.string.lib_intro),
                     style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                jobs.filterKeys { it.startsWith("import") }.values.forEach { j ->
-                    Spacer(Modifier.height(8.dp))
-                    if (j.running) Busy(stringResource(R.string.lib_reading, j.label))
-                    j.error?.let { ErrorText(it) }
+                // Only preparation errors (e.g. file too large) show here; upload progress lives on each book.
+                jobs.filterKeys { it.startsWith("import") }.values.mapNotNull { it.error }.forEach { err ->
+                    Spacer(Modifier.height(8.dp)); ErrorText(err)
                 }
             }
             if (docs.isEmpty()) item { EmptyState(stringResource(R.string.lib_empty_title), stringResource(R.string.lib_empty_body)) }
@@ -102,8 +101,16 @@ fun LibraryScreen() {
                         IconButton(onClick = { confirmDelete = d.id }) { Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.lib_delete_desc, d.title)) }
                     }
                     when (d.status) {
-                        "processing" -> Busy(stringResource(R.string.lib_processing))
-                        "failed" -> ErrorText(d.error.ifBlank { stringResource(R.string.lib_failed) })
+                        "queued" -> Column(Modifier.padding(top = 8.dp)) {
+                            Text(stringResource(R.string.lib_queued), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.tertiary)
+                            if (d.error.isNotBlank()) Text(stringResource(R.string.lib_last_error, d.error), style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        "processing" -> Busy(stringResource(R.string.lib_reading_now))
+                        "failed" -> Column(Modifier.padding(top = 8.dp)) {
+                            ErrorText(d.error.ifBlank { stringResource(R.string.lib_failed) })
+                            TextButton(onClick = { app.repo.retryImport(d.id) }) { Text(stringResource(R.string.lib_retry)) }
+                        }
                         else -> Text(listOfNotNull(
                             stringResource(R.string.lib_sections, chunks).takeIf { chunks > 0 }, stringResource(R.string.lib_questions, questions).takeIf { questions > 0 },
                         ).joinToString(" · ").ifBlank { stringResource(R.string.lib_saved) } + ". ${d.summary}", style = MaterialTheme.typography.bodyMedium, maxLines = 4,
@@ -123,14 +130,14 @@ fun LibraryScreen() {
         ImportDialog(defaultTitle = remember(uri) { ctx.displayName(uri) }, defaultGrade = app.prefs.settings.value.grade,
             onDismiss = { picked = null }) { title, subject, grade, type ->
             picked = null
-            app.repo.run("import:$uri", title) { app.repo.importDocument(uri, mime, title, subject, grade, type) }
+            app.repo.run("import:$uri", title) { app.repo.queueImport(uri, mime, title, subject, grade, type) }
         }
     }
     confirmDelete?.let { id ->
         AlertDialog(onDismissRequest = { confirmDelete = null },
             title = { Text(stringResource(R.string.lib_delete_title)) },
             text = { Text(stringResource(R.string.lib_delete_body)) },
-            confirmButton = { TextButton(onClick = { scope.launch { app.repo.dao.deleteDocumentFully(id) }; confirmDelete = null }) { Text(stringResource(R.string.delete)) } },
+            confirmButton = { TextButton(onClick = { scope.launch { app.repo.deleteDocument(id) }; confirmDelete = null }) { Text(stringResource(R.string.delete)) } },
             dismissButton = { TextButton(onClick = { confirmDelete = null }) { Text(stringResource(R.string.cancel)) } })
     }
 }

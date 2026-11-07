@@ -41,17 +41,18 @@ import java.net.URL
     val student_text: String, val image_b64: String? = null, val image_mime: String = "image/jpeg",
 )
 
-class ApiException(message: String) : Exception(message)
+/** `retryable` = worth trying again later (no signal, timeout, server busy); false = needs the user to fix something. */
+class ApiException(message: String, val retryable: Boolean = false) : Exception(message)
 
 typealias Str = (Int, Array<out Any>) -> String
 
 val json = Json { ignoreUnknownKeys = true; explicitNulls = false; encodeDefaults = true }
 
 /** Tiny HTTPS client on the platform HttpURLConnection: no OkHttp/Retrofit, so a smaller APK. */
-class Api(private val baseUrl: () -> String, private val token: () -> String?, private val str: (Int, Array<out Any>) -> String) {
+open class Api(private val baseUrl: () -> String, private val token: () -> String?, private val str: (Int, Array<out Any>) -> String) {
     private fun s(id: Int, vararg a: Any) = str(id, a)
 
-    suspend fun extract(r: ExtractReq): ExtractRes = post("/v1/extract", json.encodeToString(r), 600)
+    open suspend fun extract(r: ExtractReq): ExtractRes = post("/v1/extract", json.encodeToString(r), 600)
     suspend fun notes(r: NotesReq): NotesRes = post("/v1/notes", json.encodeToString(r), 240)
     suspend fun flashcards(r: FlashReq): FlashRes = post("/v1/flashcards", json.encodeToString(r), 180)
     suspend fun exam(r: ExamReq): ExamRes = post("/v1/exam", json.encodeToString(r), 600)
@@ -89,12 +90,12 @@ class Api(private val baseUrl: () -> String, private val token: () -> String?, p
                 c.outputStream.use { it.write(bytes) }
                 val code = c.responseCode
                 val text = (if (code in 200..299) c.inputStream else c.errorStream)?.bufferedReader()?.use { it.readText() } ?: ""
-                if (code !in 200..299) throw ApiException(errorMessage(code, text))
+                if (code !in 200..299) throw ApiException(errorMessage(code, text), retryable = code == 408 || code == 429 || code >= 500)
                 json.decodeFromString<T>(text)
             } catch (e: SocketTimeoutException) {
-                throw ApiException(s(R.string.err_timeout))
+                throw ApiException(s(R.string.err_timeout), retryable = true)
             } catch (e: IOException) {
-                throw ApiException(s(R.string.err_offline))
+                throw ApiException(s(R.string.err_offline), retryable = true)
             } finally {
                 c.disconnect()
             }

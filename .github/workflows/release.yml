@@ -1,34 +1,48 @@
-# Builds, signs and publishes the APK when a version tag is pushed, e.g. `git tag v0.4.0 && git push origin v0.4.0`.
-# The README links to releases/latest/download/tibeb.apk, so the link always gives the newest version.
+# Publishes a signed release whenever a merged PR changes version.txt (e.g. 0.4.0 -> 0.5.0).
+# The workflow creates the tag and the GitHub Release itself, so releasing = bump version.txt in a PR and merge.
+# Can also be re-run by hand: Actions tab -> Release -> Run workflow.
 name: Release
 on:
   push:
-    tags: ["v*.*.*"]
+    branches: [main]
+    paths: [version.txt]
+  workflow_dispatch:
 
 permissions:
-  contents: write   # needed only to create the GitHub Release
+  contents: write   # needed only to create the tag and the GitHub Release
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Read version
+        id: v
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="$(tr -d '[:space:]' < version.txt)"
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::version.txt must look like 1.2.3"; exit 1; }
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            echo "Release v$VERSION already exists - nothing to do."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-java@v4
+        if: steps.v.outputs.exists != 'true'
         with:
           distribution: temurin
           java-version: "17"
           cache: gradle
 
-      - name: Version from tag
-        id: v
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          [[ "$VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]] || { echo "Tag must look like v1.2.3"; exit 1; }
-          CODE=$(( BASH_REMATCH[1] * 10000 + BASH_REMATCH[2] * 100 + BASH_REMATCH[3] ))
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "code=$CODE" >> "$GITHUB_OUTPUT"
-
       - name: Restore signing key from secrets
+        if: steps.v.outputs.exists != 'true'
         env:
           KEYSTORE_BASE64: ${{ secrets.TIBEB_KEYSTORE_BASE64 }}
         run: |
@@ -39,18 +53,17 @@ jobs:
           echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
 
       - name: Test and build signed APK
+        if: steps.v.outputs.exists != 'true'
         working-directory: android
         env:
           TIBEB_KEYSTORE_FILE: ${{ runner.temp }}/release.jks
           TIBEB_KEYSTORE_PASSWORD: ${{ secrets.TIBEB_KEYSTORE_PASSWORD }}
           TIBEB_KEY_ALIAS: ${{ secrets.TIBEB_KEY_ALIAS }}
           TIBEB_KEY_PASSWORD: ${{ secrets.TIBEB_KEY_PASSWORD }}
-        run: >
-          ./gradlew --no-daemon testDebugUnitTest assembleRelease
-          -PtibebVersionName=${{ steps.v.outputs.version }}
-          -PtibebVersionCode=${{ steps.v.outputs.code }}
+        run: ./gradlew --no-daemon testDebugUnitTest assembleRelease
 
       - name: Refuse to publish a debug-signed APK
+        if: steps.v.outputs.exists != 'true'
         run: |
           APK=android/app/build/outputs/apk/release/app-release.apk
           SIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
@@ -60,20 +73,22 @@ jobs:
           cp "$APK" "tibeb-${{ steps.v.outputs.version }}.apk"
           sha256sum tibeb.apk | cut -d' ' -f1 > sha.txt
 
-      - name: Publish GitHub Release
+      - name: Publish GitHub Release (creates the tag)
+        if: steps.v.outputs.exists != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.v.outputs.version }}
         run: |
           {
             echo "## Download"
-            echo "**[tibeb.apk](https://github.com/${{ github.repository }}/releases/download/${GITHUB_REF_NAME}/tibeb.apk)** – Android 7.0+, $(du -k tibeb.apk | cut -f1) KB"
+            echo "**[tibeb.apk](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/tibeb.apk)** – Android 7.0+, $(du -k tibeb.apk | cut -f1) KB"
             echo
-            echo "SHA-256: \`$(cat sha.txt)\`"
+            echo "SHA-256 of the APK: \`$(cat sha.txt)\`"
             echo
             echo "Installing over an earlier release keeps all books, notes and results."
           } > notes.md
-          gh release create "$GITHUB_REF_NAME" tibeb.apk "tibeb-${{ steps.v.outputs.version }}.apk" \
-            --title "Tibeb ${{ steps.v.outputs.version }}" --notes-file notes.md --generate-notes
+          gh release create "v${VERSION}" tibeb.apk "tibeb-${VERSION}.apk" --target "$GITHUB_SHA" \
+            --title "Tibeb ${VERSION}" --notes-file notes.md --generate-notes
 
       - name: Remove signing key from runner
         if: always()

@@ -13,7 +13,7 @@
 - UI changes: `./gradlew recordRoborazziDebug` and look at `docs/screenshots/` (English) and `docs/screenshots/am/` (Amharic).
 
 ## Releases
-- Official APKs come only from `.github/workflows/release.yml` on a `vX.Y.Z` tag (see `docs/RELEASING.md`).
+- Official APKs come only from `.github/workflows/release.yml`, which runs when a merged PR changes `version.txt` (see `docs/RELEASING.md`). Bump `version.txt` in a PR to release.
 - Never commit keystores or signing secrets. Local release builds without the secrets are debug-signed and must not be published.
 
 ## Project rules

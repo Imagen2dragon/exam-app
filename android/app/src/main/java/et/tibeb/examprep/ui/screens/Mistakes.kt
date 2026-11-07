@@ -84,14 +84,14 @@ fun MistakesScreen(nav: NavHostController) {
                         }) { Text(stringResource(R.string.mistakes_retry, minOf(qs.size, 30))) }
                     }
                 }
-                items(qs, key = { it.id }) { MistakeItem(it) }
+                items(qs, key = { it.id }) { MistakeItem(it) { nav.navigate("explain/${it.id}") } }
             }
         }
     }
 }
 
 @Composable
-private fun MistakeItem(q: Question) {
+private fun MistakeItem(q: Question, onExplain: () -> Unit) {
     var open by remember { mutableStateOf(false) }
     TCard(onClick = { open = !open }) {
         Text(q.topic, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
@@ -103,6 +103,7 @@ private fun MistakeItem(q: Question) {
                 color = MaterialTheme.colorScheme.primary)
             if (q.explanation.isNotBlank()) Text(math(q.explanation), style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
+            androidx.compose.material3.OutlinedButton(onClick = onExplain) { Text(stringResource(R.string.explain_button)) }
         }
     }
 }

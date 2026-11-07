@@ -58,6 +58,10 @@ interface StudyDao {
     @Query("SELECT COUNT(*) FROM Card WHERE due <= :now") fun dueCount(now: Long): Flow<Int>
     @Query("SELECT COUNT(*) FROM Card") fun cardCount(): Flow<Int>
     @Query("SELECT COUNT(*) FROM Card WHERE questionId = :questionId") suspend fun cardsForQuestion(questionId: Long): Int
+    @Query("SELECT * FROM Question WHERE id = :id") suspend fun question(id: Long): Question?
+    @Query("""SELECT i.response FROM ExamItem i JOIN Exam e ON e.id = i.examId
+              WHERE i.questionId = :questionId AND e.finishedAt > 0 ORDER BY e.finishedAt DESC LIMIT 1""")
+    suspend fun latestResponse(questionId: Long): String?
 
     /**
      * Mistake notebook: questions whose MOST RECENT graded attempt lost marks. Getting a question

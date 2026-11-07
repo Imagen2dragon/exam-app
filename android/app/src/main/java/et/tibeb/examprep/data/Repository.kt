@@ -12,6 +12,8 @@ import et.tibeb.examprep.net.ExtractReq
 import et.tibeb.examprep.net.FlashReq
 import et.tibeb.examprep.net.GradeReq
 import et.tibeb.examprep.net.MockPaperReq
+import et.tibeb.examprep.net.ChatTurnReq
+import et.tibeb.examprep.net.ExplainReq
 import et.tibeb.examprep.net.PageReq
 import et.tibeb.examprep.net.NotesReq
 import et.tibeb.examprep.net.json
@@ -330,6 +332,18 @@ class Repository(private val ctx: Context, private val db: AppDb, private val ap
     }
 
     suspend fun retryGrading(examId: Long) = submit(examId)
+
+    // ---------- "Explain this question" chat (online, not stored) ----------
+
+    data class Turn(val fromStudent: Boolean, val text: String)
+
+    suspend fun explain(questionId: Long, history: List<Turn>, language: String): String {
+        val q = dao.question(questionId) ?: error(s(R.string.err_generic))
+        val options = runCatching { json.decodeFromString<List<String>>(q.optionsJson) }.getOrDefault(emptyList())
+        return api.explain(ExplainReq(q.subject, q.stem, options, q.answer, q.explanation,
+            dao.latestResponse(questionId).orEmpty(), language,
+            history.map { ChatTurnReq(if (it.fromStudent) "user" else "assistant", it.text.take(2000)) })).reply
+    }
 
     // ---------- Mistake notebook ----------
 

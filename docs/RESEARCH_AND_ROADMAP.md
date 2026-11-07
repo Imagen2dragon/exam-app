@@ -119,4 +119,12 @@ Android phone (1.4 MB APK, Android 7+)              Your server (small VPS)     
 - ✅ **Chapter from photos**: photograph up to 30 pages (or pick them from the gallery), reorder or remove them, and upload them as one chapter. Each page is compressed to ~300 KB, and the AI reads them in order.
 - ✅ **Signed releases**: one permanent download link, an in-app update notice, and updates that keep the student's data (see `docs/RELEASING.md`).
 
-**Step 2 is complete (v0.5.0).** Next up: Step 3 (mistake notebook, study planner with exam countdown, topic mastery map, "explain this question" chat).
+**Step 2 is complete (v0.5.0).**
+
+## 8. Step 3 progress (v0.6.0)
+- ✅ **Mistake notebook** (错题本): every wrong answer becomes a flashcard; the notebook keeps a question until the latest attempt is fully correct; "Retry" builds an offline exam from current mistakes.
+- ✅ **Study planner + exam countdown**: exam date with days left (Ethiopian calendar in Amharic), today's plan from real data (due cards, mistakes, weakest subject, weekly mock in the last 60 days), day streak.
+- ✅ **Topic mastery map**: every topic from books and exams as a tile (not started / weak / developing / strong, written out, not colour-only); tap a tile to practise that topic.
+- ✅ **"Explain this question" chat**: ask follow-up questions about any reviewed question or mistake, in English or Amharic. Online only; chats are not stored.
+
+**Step 3 is complete.** Next: Step 4 (cost and scale: prompt caching, batch question packs, model choice per task) and Step 5 (hardening: encrypted database, certificate pinning, accessibility pass on a low-end phone, exam focus lock).

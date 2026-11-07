@@ -422,12 +422,12 @@ fun ResultScreen(nav: NavHostController, examId: Long) {
                 Text(stringResource(R.string.res_focus))
             }
         }
-        items(items, key = { it.idx }) { ReviewItem(it) }
+        items(items, key = { it.idx }) { ReviewItem(it) { nav.navigate("explain/${it.questionId}") } }
     }
 }
 
 @Composable
-private fun ReviewItem(it: ItemWithQuestion) {
+private fun ReviewItem(it: ItemWithQuestion, onExplain: () -> Unit) {
     var open by remember { mutableStateOf(it.earned < it.marks) }
     val full = it.earned >= it.marks
     val tone = when { !it.graded -> MaterialTheme.colorScheme.surfaceVariant; full -> MaterialTheme.colorScheme.primaryContainer
@@ -448,6 +448,7 @@ private fun ReviewItem(it: ItemWithQuestion) {
                 color = MaterialTheme.colorScheme.primary)
             if (it.feedback.isNotBlank()) Text(math(it.feedback), style = MaterialTheme.typography.bodyMedium)
             if (it.explanation.isNotBlank()) Text(math(it.explanation), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            OutlinedButton(onClick = onExplain) { Text(stringResource(R.string.explain_button)) }
         }
     }
 }

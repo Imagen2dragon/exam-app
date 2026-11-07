@@ -13,6 +13,7 @@ from collections import defaultdict, deque
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 
+import admin
 import ai
 import packs
 import usage
@@ -66,6 +67,22 @@ async def device(token: str = Depends(authenticated)) -> str:
 @app.exception_handler(ai.AIError)
 async def ai_error(_: Request, e: ai.AIError):
     return JSONResponse({"detail": e.message}, status_code=e.status)
+
+
+app.include_router(admin.router)
+
+
+@app.post("/v1/progress")
+async def progress(p: admin.Progress, token: str = Depends(authenticated)):
+    """The student's app sends a progress summary (shown to the student as 'shared with your admin')."""
+    q, now = _hits["progress:" + token], time.monotonic()
+    while q and now - q[0] > 3600:
+        q.popleft()
+    if len(q) >= 30:
+        raise HTTPException(429, "Too many progress uploads")
+    q.append(now)
+    admin.save_progress(usage.device_id(token), p)
+    return {"ok": True}
 
 
 @app.get("/v1/usage")

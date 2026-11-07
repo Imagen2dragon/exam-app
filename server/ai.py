@@ -1,14 +1,27 @@
 """All Claude calls live here. The API key is read from the server environment only."""
 import json
+import os
 
 import anthropic
 
 import usage
 
-MODEL = "claude-opus-5-5"
-# Opus 5.5 can decline some requests via safety classifiers; "default" lets the API
-# retry on Anthropic's recommended fallback model inside the same call.
+MODEL = os.environ.get("MODEL_DEFAULT", "claude-opus-5-5")
+# Per-task models (owner's choice): simple, high-volume tasks use the much cheaper Haiku 5.5.
+# Exams, book reading, grading and the tutor chat stay on MODEL_DEFAULT.
+TASK_MODELS = {
+    "flashcards": os.environ.get("MODEL_FLASHCARDS", "claude-haiku-5-5"),
+    "notes": os.environ.get("MODEL_NOTES", "claude-haiku-5-5"),
+}
+# These models can decline some requests via safety classifiers; with fallbacks="default" the API
+# retries on Anthropic's recommended fallback model inside the same call. Haiku 5.5 has no
+# server-side fallback (the parameter must not be sent), so a Haiku refusal is retried on MODEL here.
+FALLBACK_MODELS = {"claude-opus-5-5", "claude-opus-5", "claude-fable-5-1", "claude-sonnet-5-5"}
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
+
+
+def model_for(task: str) -> str:
+    return TASK_MODELS.get(task, MODEL)
 
 client = anthropic.AsyncAnthropic()  # reads ANTHROPIC_API_KEY
 
@@ -35,20 +48,22 @@ class AIError(Exception):
 
 
 async def structured(content: list[dict] | str, schema: dict, *, effort: str = "high",
-                     max_tokens: int = 32_000, messages: list[dict] | None = None) -> dict:
+                     max_tokens: int = 32_000, messages: list[dict] | None = None, task: str = "default") -> dict:
     """One structured-output call. Streams so long outputs never hit HTTP timeouts.
     Pass `messages` (alternating user/assistant, ending with user) for a multi-turn chat instead of `content`."""
+    model = model_for(task)
+    request = dict(
+        model=model,
+        max_tokens=max_tokens,
+        system=SYSTEM,
+        messages=messages or [{"role": "user", "content": content}],
+        thinking={"type": "adaptive"},
+        output_config={"effort": effort, "format": {"type": "json_schema", "schema": schema}},
+    )
+    if model in FALLBACK_MODELS:
+        request |= {"betas": [FALLBACK_BETA], "fallbacks": "default"}
     try:
-        async with client.beta.messages.stream(
-            model=MODEL,
-            max_tokens=max_tokens,
-            system=SYSTEM,
-            messages=messages or [{"role": "user", "content": content}],
-            thinking={"type": "adaptive"},
-            output_config={"effort": effort, "format": {"type": "json_schema", "schema": schema}},
-            betas=[FALLBACK_BETA],
-            fallbacks="default",
-        ) as stream:
+        async with client.beta.messages.stream(**request) as stream:
             msg = await stream.get_final_message()
         usage.record_message(msg)  # cost tracking + per-device daily budget
     except anthropic.RateLimitError as e:
@@ -62,6 +77,9 @@ async def structured(content: list[dict] | str, schema: dict, *, effort: str = "
     except anthropic.APIConnectionError as e:
         raise AIError(502, "Could not reach the AI service") from e
 
+    if msg.stop_reason == "refusal" and model != MODEL:
+        # A cheaper model declined: retry once on the default model (which has server-side fallback).
+        return await structured(content, schema, effort=effort, max_tokens=max_tokens, messages=messages)
     if msg.stop_reason == "refusal":
         raise AIError(422, "The AI declined this request. Try rephrasing or a different document.")
     if msg.stop_reason == "max_tokens":

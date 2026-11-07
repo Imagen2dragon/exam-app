@@ -51,6 +51,9 @@ See [`docs/RESEARCH_AND_ROADMAP.md`](docs/RESEARCH_AND_ROADMAP.md) for the resea
 - The installer is not code-signed yet, so Windows SmartScreen may say "Windows protected your PC": click **More info → Run anyway**. It installs for your user only (no admin rights needed).
 
 ## 1. Run the server
+**On a server, with HTTPS:** follow [`docs/DEPLOY.md`](docs/DEPLOY.md): Docker + Caddy (automatic HTTPS certificate), the keys to generate, a smoke test that calls every AI feature once and prints the cost, backups and updates. About 30 minutes on a ~US$5/month server.
+
+**On your computer, for development:**
 ```bash
 cd server
 python3 -m venv .venv && . .venv/bin/activate
@@ -59,12 +62,11 @@ cp .env.example .env        # put your ANTHROPIC_API_KEY and a device token in i
 set -a; . ./.env; set +a
 uvicorn app:app --host 127.0.0.1 --port 8080
 ```
-For the phone to reach it, put it behind HTTPS (e.g. Caddy: `your.domain { reverse_proxy 127.0.0.1:8080 }`).
-Tests: `pip install pytest && python -m pytest -q` (Claude is mocked; no key needed).
+Tests: `pip install pytest httpx && python -m pytest -q` (Claude is mocked; no key needed).
 
 **Costs:** every AI call is recorded with its tokens and estimated cost (only a hash of each device token is stored). Each device has a daily budget (`DAILY_BUDGET_USD`, default $5, resets at midnight Addis Ababa time); the app shows today's use in Settings. See the spend per day and device with:
 ```bash
-python usage_report.py 7
+python usage_report.py 7                                   # or, with Docker: docker compose exec api python usage_report.py 7
 ```
 
 **Models:** exams, book reading, photo grading and the tutor chat use Claude Opus 5.5. Flashcards and revision notes use the much cheaper Claude Haiku 5.5 (about 40x cheaper per input token); if Haiku declines a request it is retried once on Opus. Change per task in `server/.env` (`MODEL_FLASHCARDS`, `MODEL_NOTES`, `MODEL_DEFAULT`).
@@ -77,7 +79,7 @@ cd android
 ./gradlew testDebugUnitTest          # unit + screenshot tests
 ./gradlew recordRoborazziDebug       # regenerate docs/screenshots
 ```
-The release build is signed with the debug key so it installs right away. Create your own keystore before sharing it widely.
+A local release build without the signing secrets is debug-signed: fine for testing, but only publish the APKs that `.github/workflows/release.yml` builds (see `docs/RELEASING.md`).
 
 ## 3. First launch
 Settings (gear on Home) → enter the server address (`https://…`) and the device token → **Save & test**.
@@ -86,5 +88,7 @@ Settings (gear on Home) → enter the server address (`https://…`) and the dev
 ```
 server/   FastAPI proxy: auth, rate limits, validation, Claude calls (ai.py), JSON schemas
 android/  Kotlin + Jetpack Compose + Room (FTS4) – no OkHttp/Retrofit/DI libs, to stay small
-docs/     research + roadmap, screenshots, preview APK
+deploy/   docker-compose + Caddyfile (HTTPS) + backup script; guide in docs/DEPLOY.md
+admin/    Windows admin app (Compose Desktop, MSI)
+docs/     research + roadmap, deploy and release guides, screenshots
 ```

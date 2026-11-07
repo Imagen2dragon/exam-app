@@ -1,0 +1,37 @@
+# Runs the Tibeb server behind Caddy, which gets and renews the HTTPS certificate automatically.
+#   cd deploy && TIBEB_DOMAIN=tibeb.example.com docker compose up -d --build
+# Secrets come from ../server/.env (never committed). See docs/DEPLOY.md.
+services:
+  api:
+    build: ../server
+    env_file: ../server/.env
+    environment:
+      USAGE_DB: /data/usage.db          # usage, progress snapshots and question packs live here
+    volumes:
+      - tibeb-data:/data
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    # No "ports:" on purpose - only Caddy can reach the API.
+
+  caddy:
+    image: caddy:2.10-alpine
+    depends_on: [api]
+    environment:
+      TIBEB_DOMAIN: ${TIBEB_DOMAIN:?set TIBEB_DOMAIN to your domain, e.g. tibeb.example.com}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    restart: unless-stopped
+
+volumes:
+  tibeb-data:
+  caddy-data:
+  caddy-config:

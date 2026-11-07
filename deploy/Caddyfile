@@ -1,0 +1,23 @@
+# HTTPS for the Tibeb API. Caddy fetches and renews the Let's Encrypt certificate by itself.
+{$TIBEB_DOMAIN} {
+	encode zstd gzip
+	request_body {
+		max_size 32MB            # matches the server's own upload limit
+	}
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		-Server
+	}
+	reverse_proxy api:8080 {
+		transport http {
+			read_timeout 15m     # exam and mock-paper generation can take a few minutes
+			write_timeout 15m
+		}
+	}
+	log {
+		output stdout
+		format console
+	}
+}

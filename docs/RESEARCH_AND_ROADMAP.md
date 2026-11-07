@@ -144,3 +144,11 @@ Android phone (1.4 MB APK, Android 7+)              Your server (small VPS)     
 - **Deploy kit:** Docker + Caddy (automatic HTTPS), a locked-down container, backups, a smoke test that makes one real call per AI feature and prints the cost. Guide: [`DEPLOY.md`](DEPLOY.md).
 
 Part of the Supabase plan (a progress dashboard) is now covered by the admin app on your own server. Supabase remains the option for accounts, cloud backup and sharing packs with classmates.
+
+## 11. Encrypted cloud backup (Supabase)
+The owner's choices: backup + restore first; the phone talks to Supabase directly; encrypted on the phone; Frankfurt region.
+- The phone signs in with a user the owner creates (public sign-up off). It gets the Supabase address and public key from the Tibeb server.
+- A random 25-character recovery code → PBKDF2-HMAC-SHA256 (200,000 rounds) → AES-256-GCM. The header is authenticated too. Supabase, the server and the admin can't read the backup.
+- Once a day, and only when something changed; optional Wi-Fi only. Restore swaps the database in at the next start, before Room opens it, and runs migrations for older backups.
+- No Supabase SDK (about 50 KB added to the APK). Storage rules are tested in CI; the phone side is tested against a local stand-in with the same rules.
+- Guide: [`SUPABASE.md`](SUPABASE.md). Next: the on-phone offline tutor, then Step 5 hardening.

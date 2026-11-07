@@ -15,8 +15,8 @@ phone ──(encrypted file, his own login)──> Supabase Storage: backups/<hi
 | | |
 |---|---|
 | **Login** | You create one Supabase user for him (email + password). Public sign-up stays **off**, so the public key in the app can't be used by strangers to create accounts and fill your storage. |
-| **Encryption** | When he turns backup on, the phone creates a **recovery code** (e.g. `K7Q2-M9XD-4TPA-HW3N-8CRE`). The code is turned into an AES-256 key on the phone (PBKDF2, 200,000 rounds). The code never leaves the phone. He writes it down once. |
-| **Backups** | Once a day while online, and again after he finishes an exam. The phone compresses its study database, encrypts it and replaces the previous backup. |
+| **Encryption** | When he turns backup on, the phone creates a **recovery code** (25 characters, e.g. `K7Q2M-9XD4T-PAHW3-N8CRE-6YB2F`). The code is turned into an AES-256 key on the phone (PBKDF2, 200,000 rounds). The code never leaves the phone. He writes it down once. |
+| **Backups** | Once a day while online, and only if something changed since the last one. The phone compresses its study database, encrypts it and replaces the previous backup. A **Wi-Fi only** switch saves mobile data. |
 | **Restore** | On a new phone: connect to your server, sign in to backup, type the recovery code. Without the code the backup cannot be opened. That's the point, so keep the code safe. |
 | **Who can read the file** | Storage rules (`supabase/setup.sql`) let a signed-in user reach only the folder named after their own user id. Tested in CI. |
 

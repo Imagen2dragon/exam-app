@@ -80,6 +80,8 @@ open class Api(private val baseUrl: () -> String, private val token: () -> Strin
     open suspend fun pack(id: String): PackRes = get("/v1/packs/" + java.net.URLEncoder.encode(id, "UTF-8"), 300)
     open suspend fun sendProgress(p: et.tibeb.examprep.data.ProgressSummary): Unit =
         post<kotlinx.serialization.json.JsonObject>("/v1/progress", json.encodeToString(p), 60).let { }
+    /** The server's settings for this phone: currently where the encrypted cloud backup lives. */
+    open suspend fun config(): et.tibeb.examprep.backup.ConfigRes = get("/v1/config", 20)
     suspend fun grade(r: GradeReq): GradeRes = post("/v1/grade", json.encodeToString(r), 240)
 
     /** Today's estimated AI spend for this device; null when offline or not configured. */

@@ -55,7 +55,7 @@ class TibebApp : Application() {
         return runCatching {
             val now = System.currentTimeMillis()
             api.sendProgress(et.tibeb.examprep.data.buildProgress(repo.dao, s.stream, s.grade, s.examDate.takeIf { it > 0 },
-                repo.activeDays(), now))
+                repo.activeDays(), now, backup.lastBackup()))
             getSharedPreferences("settings", MODE_PRIVATE).edit().putLong("last_shared", now).apply()
         }.isSuccess
     }
@@ -69,12 +69,17 @@ class TibebApp : Application() {
     lateinit var repo: Repository; private set
     lateinit var updates: et.tibeb.examprep.util.Updates; private set
     lateinit var api: Api; private set
+    lateinit var backup: et.tibeb.examprep.backup.Backup; internal set   // tests swap in a fake-backed one
 
     override fun onCreate() {
         super.onCreate()
-        prefs = Prefs(this, SecureStore(this))
+        val secure = SecureStore(this)
+        prefs = Prefs(this, secure)
+        et.tibeb.examprep.backup.Backup.applyPendingRestore(this, prefs)   // a restored backup goes in before the database opens
         api = Api(baseUrl = { prefs.settings.value.serverUrl }, token = { prefs.token() }, str = ::str)
         repo = Repository(this, AppDb.create(this), api, ::str)
+        backup = et.tibeb.examprep.backup.Backup(this, prefs, secure, { repo.db },
+            fetchConfig = { if (prefs.token().isNullOrBlank()) error("not connected") else api.config().backup })
         updates = et.tibeb.examprep.util.Updates(this)
         et.tibeb.examprep.data.ProgressWorker.schedule(this)
     }

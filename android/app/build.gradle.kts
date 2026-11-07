@@ -15,9 +15,23 @@ android {
         applicationId = "et.tibeb.examprep"
         minSdk = 24          // Android 7.0+: covers almost every phone still in use in Ethiopia
         targetSdk = 36
-        versionCode = 3
-        versionName = "0.3.0"
+        // CI passes the version from the git tag (v0.4.0 -> name 0.4.0, code 400); local builds use the defaults.
+        versionName = (findProperty("tibebVersionName") as String?) ?: "0.3.0"
+        versionCode = (findProperty("tibebVersionCode") as String?)?.toInt() ?: 3
         vectorDrawables.useSupportLibrary = true
+    }
+
+    // Release signing key comes only from environment variables (GitHub Actions secrets).
+    // It is never stored in this public repository. Without it, release builds fall back
+    // to the debug key: fine for local testing, but such APKs must not be published.
+    val releaseKey = System.getenv("TIBEB_KEYSTORE_FILE")?.let { file(it) }?.takeIf { it.exists() }
+    signingConfigs {
+        if (releaseKey != null) create("release") {
+            storeFile = releaseKey
+            storePassword = System.getenv("TIBEB_KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("TIBEB_KEY_ALIAS")
+            keyPassword = System.getenv("TIBEB_KEY_PASSWORD")
+        }
     }
 
     buildTypes {
@@ -25,7 +39,7 @@ android {
             isMinifyEnabled = true      // R8: shrink + obfuscate -> small APK, harder to reverse
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.getByName("debug") // replace with your own release key
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
     // One APK per CPU type is not needed: the app has no native code.

@@ -2,6 +2,11 @@ package et.tibeb.examprep.ui.screens
 
 import androidx.compose.ui.res.stringResource
 import et.tibeb.examprep.R
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import et.tibeb.examprep.util.Updates
 import et.tibeb.examprep.ui.subjectName
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -55,6 +60,10 @@ fun HomeScreen(nav: NavHostController) {
     val finished = exams.filter { it.finishedAt > 0 && it.maxScore > 0 }
     val avg = if (finished.isEmpty()) null else finished.takeLast(10).map { it.score / it.maxScore }.average()
 
+    val update by app.updates.available.collectAsState()
+    val ctx = LocalContext.current
+    LaunchedEffect(Unit) { app.updates.check() } // at most once a day
+
     LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp)) {
         item {
             Row(Modifier.fillMaxWidth().padding(top = 16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -63,6 +72,14 @@ fun HomeScreen(nav: NavHostController) {
                     Text(stringResource(R.string.home_title), style = MaterialTheme.typography.headlineMedium)
                 }
                 IconButton(onClick = { nav.navigate("settings") }) { Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.settings)) }
+            }
+            update?.let { v ->
+                Spacer(Modifier.height(12.dp))
+                TCard(onClick = { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(Updates.DOWNLOAD_URL))) },
+                    container = MaterialTheme.colorScheme.tertiaryContainer) {
+                    Text(stringResource(R.string.update_title, v), style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.update_body), style = MaterialTheme.typography.bodyMedium)
+                }
             }
             if (!settings.hasToken || settings.serverUrl.isBlank()) {
                 Spacer(Modifier.height(12.dp))

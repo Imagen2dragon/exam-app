@@ -51,11 +51,13 @@ class TibebApp : Application() {
 
     lateinit var prefs: Prefs; private set
     lateinit var repo: Repository; private set
+    lateinit var updates: et.tibeb.examprep.util.Updates; private set
 
     override fun onCreate() {
         super.onCreate()
         prefs = Prefs(this, SecureStore(this))
         val api = Api(baseUrl = { prefs.settings.value.serverUrl }, token = { prefs.token() }, str = ::str)
         repo = Repository(this, AppDb.create(this), api, ::str)
+        updates = et.tibeb.examprep.util.Updates(this)
     }
 }

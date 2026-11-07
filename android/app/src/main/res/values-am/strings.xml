@@ -233,6 +233,11 @@
     <string name="err_429">በጣም ብዙ ጥያቄዎች ተልከዋል። አንድ ደቂቃ ይጠብቁ።</string>
     <string name="err_503">የAI አገልግሎቱ ተይዟል። ከአንድ ደቂቃ በኋላ ይሞክሩ።</string>
     <string name="err_server">የሰርቨር ስህተት (%1$d)</string>
+    <string name="update_title">አዲስ ስሪት ደርሷል፦ %1$s</string>
+    <string name="update_body">ለማውረድና ለመጫን ይንኩ። መጻሕፍትዎ፣ ማስታወሻዎችዎና ውጤቶችዎ አይጠፉም።</string>
+    <string name="set_updates">የመተግበሪያ ዝማኔዎችን ፈልግ</string>
+    <string name="set_updates_body">በቀን አንድ ጊዜ የቅርብ ጊዜውን ስሪት ቁጥር ከGitHub ይጠይቃል። ስለ እርስዎም ሆነ ስለ ጥናትዎ ምንም መረጃ አይላክም።</string>
+    <string name="set_version">ስሪት %1$s</string>
     <plurals name="marks">
         <item quantity="one">%d ነጥብ</item>
         <item quantity="other">%d ነጥብ</item>

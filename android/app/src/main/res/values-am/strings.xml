@@ -257,8 +257,21 @@
     <string name="pages_upload">ምዕራፉን ጫን</string>
     <string name="pages_discard_title">እነዚህ ፎቶዎች ይጣሉ?</string>
     <string name="pages_discard">ጣል</string>
+    <string name="mistakes_title">የስህተት ማስታወሻ ደብተር</string>
+    <string name="mistakes_intro">የተሳሳቱት እያንዳንዱ ጥያቄ እዚህ ይመዘገባል፤ ፍላሽ ካርድም ይሆናል። ከዝርዝሩ እስኪወጡ ድረስ እንደገና ይሞክሯቸው፤ አንድ ሙሉ ትክክለኛ መልስ ጥያቄውን ያስወጣዋል።</string>
+    <string name="mistakes_empty_title">የሚታረም ስህተት የለም 🎉</string>
+    <string name="mistakes_empty_body">ፈተና ሲጨርሱ የተሳሳቱት መልሶች እዚህ ይታያሉ።</string>
+    <string name="mistakes_retry">እንደገና ሞክር (%1$d)</string>
+    <string name="mistakes_to_fix">%1$d የሚታረሙ</string>
+    <string name="home_mistakes">የሚታረሙ ስህተቶች</string>
+    <string name="mistakes_exam_title">%1$s – የስህተቶች ድግግሞሽ</string>
+    <string name="card_answer">መልስ፦ %1$s</string>
     <plurals name="marks">
         <item quantity="one">%d ነጥብ</item>
         <item quantity="other">%d ነጥብ</item>
+    </plurals>
+    <plurals name="mistakes_waiting">
+        <item quantity="one">የተሳሳቱት %d ጥያቄ ይጠብቃል። ያለ ኢንተርኔት እንደገና ይሞክሩት።</item>
+        <item quantity="other">የተሳሳቷቸው %d ጥያቄዎች ይጠብቃሉ። ያለ ኢንተርኔት እንደገና ይሞክሯቸው።</item>
     </plurals>
 </resources>

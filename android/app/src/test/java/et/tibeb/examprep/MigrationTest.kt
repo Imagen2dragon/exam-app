@@ -26,4 +26,14 @@ class MigrationTest {
         }
         db.execSQL("INSERT INTO Mock (stream, questionsPerPaper, useAi, createdAt) VALUES ('natural', 60, 1, 0)")
     }
+
+    @Test fun migrate2To3KeepsCardsAndLinksQuestions() {
+        helper.createDatabase("m3.db", 2).use {
+            it.execSQL("INSERT INTO Card (id, subject, topic, front, back, ease, intervalDays, reps, due) VALUES (1, 'Biology', 'Cells', 'f', 'b', 2.5, 3, 2, 0)")
+        }
+        val db = helper.runMigrationsAndValidate("m3.db", 3, true, AppDb.MIGRATION_2_3)
+        db.query("SELECT front, intervalDays, questionId FROM Card").use { c ->
+            c.moveToFirst(); assertEquals("f", c.getString(0)); assertEquals(3, c.getInt(1)); assertEquals(true, c.isNull(2))
+        }
+    }
 }

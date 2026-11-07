@@ -106,6 +106,7 @@ open class ScreenshotTest {
         rule.runOnUiThread { rule.activity.navForTest?.navigate("mocksetup") }; shot("10_mock_setup")
         rule.runOnUiThread { rule.activity.navForTest?.navigate("mock/$mockIdForTest") }; shot("11_mock_hub")
         rule.runOnUiThread { rule.activity.navForTest?.navigate("settings") }; shot("12_settings")
+        rule.runOnUiThread { rule.activity.navForTest?.navigate("mistakes") }; shot("14_mistakes")
         // Chapter photos screen with three sample "pages"
         val app = rule.activity.application as TibebApp
         val pages = (1..3).map { n -> samplePage(n) }

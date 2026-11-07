@@ -138,6 +138,9 @@ fun StudyScreen(nav: NavHostController) {
             FilledTonalButton(onClick = { nav.navigate("review") }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
                 Text(stringResource(R.string.study_review_button, cardCount))
             }
+            OutlinedButton(onClick = { nav.navigate("mistakes") }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(top = 8.dp)) {
+                Text(stringResource(R.string.mistakes_title))
+            }
             SectionTitle(stringResource(R.string.study_my_notes))
         }
         if (notes.isEmpty()) item { EmptyState(stringResource(R.string.study_notes_empty_title), stringResource(R.string.study_notes_empty_body)) }

@@ -39,6 +39,7 @@ import et.tibeb.examprep.ui.screens.ExamSetupScreen
 import et.tibeb.examprep.ui.screens.ExamsScreen
 import et.tibeb.examprep.ui.screens.HomeScreen
 import et.tibeb.examprep.ui.screens.LibraryScreen
+import et.tibeb.examprep.ui.screens.MistakesScreen
 import et.tibeb.examprep.ui.screens.MockScreen
 import et.tibeb.examprep.ui.screens.MockSetupScreen
 import et.tibeb.examprep.ui.screens.NoteScreen
@@ -103,6 +104,7 @@ private fun AppNav(onNav: (NavHostController) -> Unit) {
             composable("exams") { ExamsScreen(nav) }
             composable("settings") { SettingsScreen(nav) }
             composable("review") { ReviewScreen(nav) }
+            composable("mistakes") { MistakesScreen(nav) }
             composable("newexam?subject={subject}", listOf(navArgument("subject") { defaultValue = "" })) {
                 ExamSetupScreen(nav, it.arguments?.getString("subject").orEmpty())
             }

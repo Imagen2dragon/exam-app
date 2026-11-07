@@ -301,11 +301,37 @@ class Repository(private val ctx: Context, private val db: AppDb, private val ap
         val after = dao.items(examId).first()
         val exam = dao.examNow(examId)!!
         dao.update(exam.copy(finishedAt = System.currentTimeMillis(), score = after.sumOf { it.earned }))
+        addMistakeCards(after)
         if (aiFailures > 0) error(s(R.string.err_grading_offline, aiFailures))
         return examId
     }
 
     suspend fun retryGrading(examId: Long) = submit(examId)
+
+    // ---------- Mistake notebook ----------
+
+    /** Every wrong answer becomes a flashcard (once per question), due immediately. */
+    private suspend fun addMistakeCards(items: List<ItemWithQuestion>) {
+        for (it in items.filter { it.graded && it.earned < it.marks }) {
+            if (dao.cardsForQuestion(it.questionId) > 0) continue
+            val options = runCatching { json.decodeFromString<List<String>>(it.optionsJson) }.getOrDefault(emptyList())
+            val front = if (it.type == "mcq" && options.isNotEmpty())
+                it.stem + "\n" + options.mapIndexed { i, o -> "${'A' + i}. $o" }.joinToString("\n") else it.stem
+            val answer = it.answer + if (it.type == "numeric" && it.unit.isNotBlank()) " ${it.unit}" else ""
+            val back = listOf(s(R.string.card_answer, answer), it.explanation).filter { t -> t.isNotBlank() }.joinToString("\n\n")
+            dao.insertCards(listOf(Card(subject = it.subject, topic = it.topic, front = front, back = back, questionId = it.questionId)))
+        }
+    }
+
+    /** An offline exam made only of the student's current mistakes in one subject. */
+    suspend fun createMistakeExam(subject: String, limit: Int = 30): Long {
+        val qs = dao.mistakes().first().filter { it.subject == subject }.take(limit)
+        require(qs.isNotEmpty())
+        val examId = dao.insert(Exam(title = s(R.string.mistakes_exam_title, subjectLabel(subject)), subject = subject,
+            minutes = (qs.size * 1.5).toInt().coerceAtLeast(5), maxScore = qs.sumOf { it.marks }.toDouble()))
+        dao.insertItems(qs.mapIndexed { i, q -> ExamItem(examId = examId, idx = i, questionId = q.id) })
+        return examId
+    }
 }
 
 private fun ApiQuestion.toEntity(subject: String, grade: Int, source: String, docId: Long?) = Question(

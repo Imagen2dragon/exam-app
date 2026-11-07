@@ -56,6 +56,18 @@ interface StudyDao {
     @Query("SELECT * FROM Card WHERE due <= :now ORDER BY due LIMIT 50") fun dueCards(now: Long): Flow<List<Card>>
     @Query("SELECT COUNT(*) FROM Card WHERE due <= :now") fun dueCount(now: Long): Flow<Int>
     @Query("SELECT COUNT(*) FROM Card") fun cardCount(): Flow<Int>
+    @Query("SELECT COUNT(*) FROM Card WHERE questionId = :questionId") suspend fun cardsForQuestion(questionId: Long): Int
+
+    /**
+     * Mistake notebook: questions whose MOST RECENT graded attempt lost marks. Getting a question
+     * fully right later removes it from the notebook automatically.
+     */
+    @Query("""SELECT q.* FROM Question q JOIN ExamItem i ON i.questionId = q.id JOIN Exam e ON e.id = i.examId
+              WHERE e.finishedAt > 0 AND i.graded = 1 AND i.earned < q.marks
+                AND e.finishedAt = (SELECT MAX(e2.finishedAt) FROM ExamItem i2 JOIN Exam e2 ON e2.id = i2.examId
+                                    WHERE i2.questionId = q.id AND e2.finishedAt > 0 AND i2.graded = 1)
+              GROUP BY q.id ORDER BY e.finishedAt DESC""")
+    fun mistakes(): Flow<List<Question>>
 
     // Exams
     @Insert suspend fun insert(e: Exam): Long
@@ -102,7 +114,7 @@ interface StudyDao {
 @Database(
     entities = [Document::class, Chunk::class, ChunkFts::class, Question::class, Note::class,
         Card::class, Exam::class, ExamItem::class, Mock::class],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class AppDb : RoomDatabase() {
@@ -110,7 +122,15 @@ abstract class AppDb : RoomDatabase() {
 
     companion object {
         fun create(ctx: Context): AppDb =
-            Room.databaseBuilder(ctx, AppDb::class.java, "tibeb.db").addMigrations(MIGRATION_1_2).build()
+            Room.databaseBuilder(ctx, AppDb::class.java, "tibeb.db").addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
+
+        /** v0.5 -> v0.6: mistake notebook links auto-made flashcards to their question. */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `Card` ADD COLUMN `questionId` INTEGER")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_Card_questionId` ON `Card` (`questionId`)")
+            }
+        }
 
         /** v0.1 -> v0.2: national mocks. Keeps all existing books, notes, cards and results. */
         val MIGRATION_1_2 = object : Migration(1, 2) {

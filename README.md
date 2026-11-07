@@ -40,6 +40,16 @@ Android app plus a small backend. Upload textbooks, teacher guides and past nati
 Release APK: **1.5 MB**, Android 7.0+ (minSdk 24), one permission (INTERNET).
 See [`docs/RESEARCH_AND_ROADMAP.md`](docs/RESEARCH_AND_ROADMAP.md) for the research, the security design and the next steps. Screenshots are in `docs/screenshots/`.
 
+## Admin app for Windows (owner only)
+
+**[Download TibebAdmin.msi](https://github.com/Imagen2dragon/exam-app/releases/latest/download/TibebAdmin.msi)**: follow your student's preparation and AI use from your PC.
+
+- **Overview:** days to the exam, average score, best national mock (out of 600, against the 300 pass line), streak, mistakes to fix; charts over time; per-subject averages
+- **Topics** (weak / developing / strong), **Exams** (recent results and mocks), **Study days** (calendar), **AI use** (cost per day vs. the daily budget, cost by feature, cache savings), **Books**
+- Sign in with your server address and the server's `ADMIN_TOKEN`. Phones never have that key, and the key is stored encrypted for your Windows account (DPAPI). 10 wrong keys lock the admin side for 15 minutes.
+- **The student sees that sharing is on** (a notice in the app and a Settings card). Only results and activity are shared, never notes or tutor chats.
+- The installer is not code-signed yet, so Windows SmartScreen may say "Windows protected your PC": click **More info → Run anyway**. It installs for your user only (no admin rights needed).
+
 ## 1. Run the server
 ```bash
 cd server

@@ -1,0 +1,41 @@
+{
+ "device": "8408c6d2a7b2",
+ "budget_usd": 5.0,
+ "days": [
+  {
+   "day": "2026-11-07",
+   "requests": 4,
+   "usd": 0.9337,
+   "input_tokens": 80500,
+   "cached_share": 0.77,
+   "output_tokens": 44900
+  }
+ ],
+ "by_feature": [
+  {
+   "endpoint": "/v1/mock-paper",
+   "model": "claude-opus-5-5",
+   "requests": 1,
+   "usd": 0.628
+  },
+  {
+   "endpoint": "/v1/exam",
+   "model": "claude-opus-5-5",
+   "requests": 1,
+   "usd": 0.276
+  },
+  {
+   "endpoint": "/v1/explain",
+   "model": "claude-opus-5-5",
+   "requests": 1,
+   "usd": 0.0284
+  },
+  {
+   "endpoint": "/v1/flashcards",
+   "model": "claude-haiku-5-5",
+   "requests": 1,
+   "usd": 0.0013
+  }
+ ],
+ "total_usd": 0.9337
+}

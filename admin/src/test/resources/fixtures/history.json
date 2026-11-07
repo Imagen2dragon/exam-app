@@ -1,0 +1,307 @@
+{
+ "device": "8408c6d2a7b2",
+ "latest": {
+  "app_version": "0.8.0",
+  "generated_at": 1794085107053,
+  "stream": "natural",
+  "grade": 12,
+  "exam_date": 1815080307053,
+  "streak": 6,
+  "totals": {
+   "exams_done": 23,
+   "avg_score_pct": 64.2,
+   "mocks_done": 1,
+   "best_mock_total": 341.5,
+   "cards_total": 182,
+   "cards_due": 14,
+   "mistakes_open": 9,
+   "books": 4,
+   "bank_questions": 296
+  },
+  "subjects": [
+   {
+    "subject": "Mathematics",
+    "exams": 6,
+    "avg_pct": 58.0,
+    "last_pct": 66.0
+   },
+   {
+    "subject": "Physics",
+    "exams": 5,
+    "avg_pct": 71.5,
+    "last_pct": 80.0
+   },
+   {
+    "subject": "Chemistry",
+    "exams": 4,
+    "avg_pct": 49.0,
+    "last_pct": 55.0
+   },
+   {
+    "subject": "Biology",
+    "exams": 3,
+    "avg_pct": 77.0,
+    "last_pct": 74.0
+   },
+   {
+    "subject": "English",
+    "exams": 3,
+    "avg_pct": 68.0,
+    "last_pct": 70.0
+   },
+   {
+    "subject": "Scholastic Aptitude",
+    "exams": 2,
+    "avg_pct": 62.0,
+    "last_pct": 65.0
+   }
+  ],
+  "topics": [
+   {
+    "subject": "Mathematics",
+    "topic": "Limits",
+    "attempted": 8,
+    "accuracy": 0.81
+   },
+   {
+    "subject": "Mathematics",
+    "topic": "Derivatives",
+    "attempted": 6,
+    "accuracy": 0.42
+   },
+   {
+    "subject": "Mathematics",
+    "topic": "Sequences",
+    "attempted": 4,
+    "accuracy": 0.6
+   },
+   {
+    "subject": "Physics",
+    "topic": "Kinematics",
+    "attempted": 7,
+    "accuracy": 0.86
+   },
+   {
+    "subject": "Physics",
+    "topic": "Electrostatics",
+    "attempted": 5,
+    "accuracy": 0.4
+   },
+   {
+    "subject": "Physics",
+    "topic": "Waves",
+    "attempted": 2,
+    "accuracy": 1.0
+   },
+   {
+    "subject": "Chemistry",
+    "topic": "Equilibrium",
+    "attempted": 6,
+    "accuracy": 0.33
+   },
+   {
+    "subject": "Chemistry",
+    "topic": "Acids and bases",
+    "attempted": 4,
+    "accuracy": 0.62
+   },
+   {
+    "subject": "Biology",
+    "topic": "Genetics",
+    "attempted": 5,
+    "accuracy": 0.8
+   }
+  ],
+  "recent_exams": [
+   {
+    "title": "Chemistry – national mock",
+    "subject": "Chemistry",
+    "finished_at": 1794085107053,
+    "score": 33.0,
+    "max_score": 60.0,
+    "mock": true
+   },
+   {
+    "title": "Derivatives – hard practice",
+    "subject": "Mathematics",
+    "finished_at": 1794041907053,
+    "score": 13.0,
+    "max_score": 20.0,
+    "mock": false
+   },
+   {
+    "title": "Waves practice",
+    "subject": "Physics",
+    "finished_at": 1793998707053,
+    "score": 18.0,
+    "max_score": 20.0,
+    "mock": false
+   },
+   {
+    "title": "Genetics",
+    "subject": "Biology",
+    "finished_at": 1793955507053,
+    "score": 16.0,
+    "max_score": 20.0,
+    "mock": false
+   }
+  ],
+  "mocks": [
+   {
+    "created_at": 1793307507053,
+    "total": 341.5,
+    "papers_done": 6
+   },
+   {
+    "created_at": 1793998707053,
+    "total": 118.0,
+    "papers_done": 2
+   }
+  ],
+  "activity_days": [
+   1794085107053,
+   1793998707053,
+   1793912307053,
+   1793739507053,
+   1793653107053,
+   1793566707053,
+   1793393907053,
+   1793307507053,
+   1793221107053,
+   1792875507053,
+   1792702707053,
+   1792616307053,
+   1792529907053,
+   1792357107053,
+   1792270707053,
+   1792184307053,
+   1792011507053,
+   1791925107053,
+   1791838707053,
+   1791665907053,
+   1791579507053,
+   1791493107053,
+   1791320307053,
+   1791233907053,
+   1791147507053,
+   1790974707053,
+   1790888307053,
+   1790801907053,
+   1790542707053,
+   1790456307053,
+   1790283507053,
+   1790197107053,
+   1790110707053,
+   1789937907053,
+   1789851507053,
+   1789765107053,
+   1789592307053,
+   1789505907053,
+   1789419507053,
+   1789246707053,
+   1789160307053,
+   1789073907053,
+   1788901107053,
+   1788814707053,
+   1788728307053,
+   1788555507053,
+   1788469107053,
+   1788382707053,
+   1788209907053,
+   1788123507053,
+   1788037107053,
+   1787864307053,
+   1787777907053,
+   1787691507053,
+   1787518707053,
+   1787432307053,
+   1787345907053,
+   1787173107053,
+   1787086707053,
+   1787000307053,
+   1786827507053,
+   1786741107053,
+   1786654707053,
+   1786481907053,
+   1786395507053
+  ],
+  "books": [
+   {
+    "title": "Grade 12 Mathematics – Unit 3",
+    "subject": "Mathematics",
+    "status": "ready"
+   },
+   {
+    "title": "ESSLCE Physics 2016 E.C.",
+    "subject": "Physics",
+    "status": "ready"
+   },
+   {
+    "title": "Biology G11 – Unit 2 (photos)",
+    "subject": "Biology",
+    "status": "queued"
+   },
+   {
+    "title": "Chemistry 2015 E.C. exam",
+    "subject": "Chemistry",
+    "status": "ready"
+   }
+  ]
+ },
+ "history": [
+  {
+   "day": "2026-10-03",
+   "avg_score_pct": 51,
+   "exams_done": 23,
+   "mistakes_open": 15,
+   "best_mock_total": 0,
+   "streak": 6,
+   "cards_total": 182
+  },
+  {
+   "day": "2026-10-10",
+   "avg_score_pct": 55,
+   "exams_done": 23,
+   "mistakes_open": 14,
+   "best_mock_total": 0,
+   "streak": 6,
+   "cards_total": 182
+  },
+  {
+   "day": "2026-10-17",
+   "avg_score_pct": 57,
+   "exams_done": 23,
+   "mistakes_open": 12,
+   "best_mock_total": 0,
+   "streak": 6,
+   "cards_total": 182
+  },
+  {
+   "day": "2026-10-24",
+   "avg_score_pct": 60,
+   "exams_done": 23,
+   "mistakes_open": 11,
+   "best_mock_total": 312,
+   "streak": 6,
+   "cards_total": 182
+  },
+  {
+   "day": "2026-10-31",
+   "avg_score_pct": 62,
+   "exams_done": 23,
+   "mistakes_open": 10,
+   "best_mock_total": 341.5,
+   "streak": 6,
+   "cards_total": 182
+  },
+  {
+   "day": "2026-11-07",
+   "avg_score_pct": 64.2,
+   "exams_done": 23,
+   "mistakes_open": 9,
+   "best_mock_total": 341.5,
+   "streak": 6,
+   "cards_total": 182
+  }
+ ]
+}

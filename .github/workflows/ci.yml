@@ -34,3 +34,30 @@ jobs:
       - name: Unit, migration, language and screenshot tests + release lint
         working-directory: android
         run: ./gradlew --no-daemon testDebugUnitTest assembleRelease
+
+  admin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+      - name: Admin app tests (contract with the server's fixtures, key storage, screen renders)
+        working-directory: admin
+        run: ./gradlew --no-daemon test
+
+  admin-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+      - name: Build the Windows installer (.msi)
+        working-directory: admin
+        run: ./gradlew.bat --no-daemon packageMsi
+

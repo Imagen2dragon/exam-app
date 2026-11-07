@@ -115,4 +115,8 @@ Android phone (1.4 MB APK, Android 7+)              Your server (small VPS)     
 - ✅ **Math display**: simple LaTeX (`x^2`, `\frac{}{}`, `\sqrt{}`, `\lim_{x\to3}`, Greek letters, `H_2O`) shows as real superscripts, subscripts and symbols, with no library.
 - ✅ Database migration v1→v2 (keeps all existing data), with a test.
 - ✅ **Amharic interface (አማርኛ)**: all 232 interface strings and every error message in English and Amharic. Settings → App language: Phone default / English / አማርኛ, working from Android 7, and on Android 13+ also listed under the system's App languages. Dates use the **Ethiopian calendar** in Amharic (e.g. 28 ጥቅምት 2019 ዓ.ም.). Exam questions stay in English, like the real national exam. Wording lives in `android/tools/strings_table.py`; run `python3 tools/gen_strings.py` after editing. **A native-speaker review is recommended.**
-- ⏳ Next in Step 2: multi-photo chapter upload, background uploads (WorkManager).
+- ✅ **Background uploads** (WorkManager): a book keeps uploading after the app is closed, waits for a connection, and retries automatically when the signal drops; real errors show a Retry button.
+- ✅ **Chapter from photos**: photograph up to 30 pages (or pick them from the gallery), reorder or remove them, and upload them as one chapter. Each page is compressed to ~300 KB, and the AI reads them in order.
+- ✅ **Signed releases**: one permanent download link, an in-app update notice, and updates that keep the student's data (see `docs/RELEASING.md`).
+
+**Step 2 is complete (v0.5.0).** Next up: Step 3 (mistake notebook, study planner with exam countdown, topic mastery map, "explain this question" chat).

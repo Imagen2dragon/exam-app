@@ -28,6 +28,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -60,7 +62,7 @@ import kotlinx.coroutines.launch
 
 
 @Composable
-fun LibraryScreen() {
+fun LibraryScreen(nav: androidx.navigation.NavHostController) {
     val app = LocalApp.current
     val ctx = LocalContext.current
     val docs by app.repo.dao.documents().collectAsState(emptyList())
@@ -119,11 +121,19 @@ fun LibraryScreen() {
                 }
             }
         }
-        ExtendedFloatingActionButton(
-            onClick = { pick.launch(arrayOf("application/pdf", "image/*")) },
-            icon = { Icon(Icons.Filled.Add, null) }, text = { Text(stringResource(R.string.lib_upload)) },
-            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
-        )
+        Box(Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
+            var menu by remember { mutableStateOf(false) }
+            ExtendedFloatingActionButton(
+                onClick = { menu = true },
+                icon = { Icon(Icons.Filled.Add, null) }, text = { Text(stringResource(R.string.lib_upload)) },
+            )
+            DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                DropdownMenuItem(text = { Text(stringResource(R.string.lib_add_pages)) },
+                    onClick = { menu = false; nav.navigate("pages") })
+                DropdownMenuItem(text = { Text(stringResource(R.string.lib_add_file)) },
+                    onClick = { menu = false; pick.launch(arrayOf("application/pdf", "image/*")) })
+            }
+        }
     }
 
     picked?.let { (uri, mime) ->
@@ -143,7 +153,7 @@ fun LibraryScreen() {
 }
 
 @Composable
-private fun ImportDialog(defaultTitle: String, defaultGrade: Int, onDismiss: () -> Unit, onImport: (String, String, Int, String) -> Unit) {
+internal fun ImportDialog(defaultTitle: String, defaultGrade: Int, onDismiss: () -> Unit, onImport: (String, String, Int, String) -> Unit) {
     var title by remember { mutableStateOf(defaultTitle) }
     var subject by remember { mutableStateOf("Mathematics") }
     var grade by remember { mutableIntStateOf(defaultGrade) }

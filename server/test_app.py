@@ -107,3 +107,37 @@ def test_mock_paper_builds_full_paper():
     assert len(r.json()["questions"]) == 60
     assert CALLS[0]["effort"] == "low"  # blueprint call is cheap
     assert client.post("/v1/mock-paper", json={**body, "count": 500}, headers=AUTH).status_code == 422
+
+
+def _extract_body(**kw):
+    return {"mime": "image/jpeg", "subject": "Biology", "title": "Unit 2", "doc_type": "textbook", "grade": 11, **kw}
+
+
+def test_extract_chapter_pages_in_order():
+    pages = [{"mime": "image/jpeg", "data_b64": f"cGFnZ{i}"} for i in range(3)]
+    r = client.post("/v1/extract", json=_extract_body(pages=pages), headers=AUTH)
+    assert r.status_code == 200, r.text
+    content = CALLS[0]["content"]
+    labels = [b["text"] for b in content if b["type"] == "text" and b["text"].startswith("Page ")]
+    assert labels == ["Page 1 of 3:", "Page 2 of 3:", "Page 3 of 3:"]
+    assert [b["source"]["data"] for b in content if b["type"] == "image"] == [p["data_b64"] for p in pages]
+    assert "consecutive pages" in content[-1]["text"]
+
+
+def test_extract_single_file_still_works():
+    r = client.post("/v1/extract", json=_extract_body(mime="application/pdf", data_b64="JVBERi0="), headers=AUTH)
+    assert r.status_code == 200 and CALLS[0]["content"][0]["type"] == "document"
+
+
+def test_extract_rejects_both_neither_and_too_many_pages():
+    page = {"mime": "image/jpeg", "data_b64": "eA=="}
+
+    def post(body):
+        server._hits.clear()  # these are validation checks, not rate-limit checks
+        return client.post("/v1/extract", json=body, headers=AUTH).status_code
+
+    assert post(_extract_body()) == 422
+    assert post(_extract_body(data_b64="eA==", pages=[page])) == 422
+    assert post(_extract_body(pages=[page] * 31)) == 422
+    assert post(_extract_body(pages=[{"mime": "application/pdf", "data_b64": "eA=="}])) == 422
+    assert post(_extract_body(pages=[page] * 30)) == 200

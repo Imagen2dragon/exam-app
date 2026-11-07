@@ -1,5 +1,6 @@
 package et.tibeb.examprep
 
+import androidx.activity.compose.setContent
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -79,6 +80,18 @@ open class ScreenshotTest {
 
     private var mockIdForTest = 0L
 
+    /** A plain "textbook page" image for the chapter-photos screenshot. */
+    private fun samplePage(n: Int): String {
+        val bmp = android.graphics.Bitmap.createBitmap(300, 400, android.graphics.Bitmap.Config.ARGB_8888)
+        val c = android.graphics.Canvas(bmp); c.drawColor(0xFFFDFBF5.toInt())
+        val p = android.graphics.Paint().apply { color = 0xFF9AA39D.toInt(); strokeWidth = 6f }
+        for (y in 60 until 380 step 22) c.drawLine(30f, y.toFloat(), if (y % 5 == 0) 200f else 270f, y.toFloat(), p)
+        p.color = 0xFF0E6B4E.toInt(); p.textSize = 34f; c.drawText("Unit 2 · p.$n", 30f, 44f, p)
+        val f = java.io.File(rule.activity.filesDir, "staging/test/page$n.jpg").apply { parentFile!!.mkdirs() }
+        f.outputStream().use { bmp.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, it) }
+        return f.absolutePath
+    }
+
     @Test fun screens() {
         val examId = seed()
         shot("01_home")
@@ -93,6 +106,19 @@ open class ScreenshotTest {
         rule.runOnUiThread { rule.activity.navForTest?.navigate("mocksetup") }; shot("10_mock_setup")
         rule.runOnUiThread { rule.activity.navForTest?.navigate("mock/$mockIdForTest") }; shot("11_mock_hub")
         rule.runOnUiThread { rule.activity.navForTest?.navigate("settings") }; shot("12_settings")
+        // Chapter photos screen with three sample "pages"
+        val app = rule.activity.application as TibebApp
+        val pages = (1..3).map { n -> samplePage(n) }
+        rule.runOnUiThread {
+            rule.activity.setContent {
+                et.tibeb.examprep.ui.theme.TibebTheme {
+                    androidx.compose.runtime.CompositionLocalProvider(et.tibeb.examprep.ui.LocalApp provides app) {
+                        et.tibeb.examprep.ui.screens.PagesScreen(androidx.navigation.compose.rememberNavController(), initialPages = pages)
+                    }
+                }
+            }
+        }
+        shot("13_chapter_photos")
     }
 }
 

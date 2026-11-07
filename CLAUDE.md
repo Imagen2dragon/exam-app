@@ -10,6 +10,7 @@
 - Server: `cd server && python -m pytest -q`
 - Android: `cd android && ./gradlew testDebugUnitTest assembleRelease`
   (unit, migration, language and screenshot tests; release build runs lint)
+- Admin app: `cd admin && ./gradlew test` (renders `docs/screenshots/admin/`). If the admin API changes, regenerate its fixtures: `cd server && python ../admin/tools/make_fixtures.py`
 - UI changes: `./gradlew recordRoborazziDebug` and look at `docs/screenshots/` (English) and `docs/screenshots/am/` (Amharic).
 
 ## Releases

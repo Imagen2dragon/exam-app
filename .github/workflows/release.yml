@@ -18,6 +18,9 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
+    outputs:
+      created: ${{ steps.v.outputs.exists != 'true' }}
+      version: ${{ steps.v.outputs.version }}
     steps:
       - uses: actions/checkout@v4
 
@@ -93,3 +96,28 @@ jobs:
       - name: Remove signing key from runner
         if: always()
         run: rm -f "$RUNNER_TEMP/release.jks"
+
+  # The Windows admin app is built on a Windows machine and attached to the same release.
+  admin-windows:
+    needs: release
+    if: needs.release.outputs.created == 'true'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+      - name: Build the Windows installer (.msi)
+        working-directory: admin
+        run: ./gradlew.bat --no-daemon packageMsi
+      - name: Attach TibebAdmin.msi to the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          MSI=$(ls admin/build/compose/binaries/main/msi/*.msi | head -1)
+          cp "$MSI" TibebAdmin.msi
+          gh release upload "v${{ needs.release.outputs.version }}" TibebAdmin.msi --clobber
+

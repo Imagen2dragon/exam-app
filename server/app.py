@@ -14,8 +14,9 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 import ai
-from schemas import (BLUEPRINT_SCHEMA, EXAM_SCHEMA, EXTRACT_SCHEMA, FLASH_SCHEMA, GRADE_SCHEMA,
-                     NOTES_SCHEMA, ExamReq, ExtractReq, FlashReq, GradeReq, MockPaperReq, NotesReq)
+from schemas import (BLUEPRINT_SCHEMA, EXAM_SCHEMA, EXPLAIN_SCHEMA, EXTRACT_SCHEMA, FLASH_SCHEMA,
+                     GRADE_SCHEMA, NOTES_SCHEMA, ExamReq, ExplainReq, ExtractReq, FlashReq, GradeReq,
+                     MockPaperReq, NotesReq)
 
 TOKENS = [t.strip() for t in os.environ.get("DEVICE_TOKENS", "").split(",") if len(t.strip()) >= 24]
 RATE = int(os.environ.get("RATE_LIMIT_PER_MIN", "8"))
@@ -204,6 +205,27 @@ async def mock_paper(r: MockPaperReq, _: str = Depends(device)):
     if len(questions) < r.count * 0.8:
         raise ai.AIError(502, "The paper came back incomplete. Please try again.")
     return {"title": f"{r.subject} – national mock paper", "minutes": 0, "questions": questions}
+
+
+@app.post("/v1/explain")
+async def explain(r: ExplainReq, _: str = Depends(device)):
+    """Tutor chat about one question: why the answer is right, why the student's choice was wrong."""
+    letters = "ABCDE"
+    opts = "\n".join(f"{letters[i]}. {o}" for i, o in enumerate(r.options)) or "(not multiple choice)"
+    lang = ("Reply in English." if r.language == "en"
+            else "Reply in Amharic (Ge'ez script); keep formulas and technical terms in English.")
+    context = (
+        f"You are tutoring a Grade 12 student about one {r.subject} exam question.\n"
+        f"Question: {r.question}\nOptions:\n{opts}\nCorrect answer: {r.correct_answer}\n"
+        f"Official explanation: {r.explanation or '(none)'}\n"
+        f"The student answered: {r.student_answer or '(no answer)'}\n\n"
+        "Be a patient tutor: answer the student's question directly in at most ~150 words, show the key "
+        "step or the misconception behind a wrong choice, and end with one short check-your-understanding "
+        f"question when it helps. Stay on this question and its topic. {lang}\n\nStudent: "
+    )
+    messages = [{"role": t.role, "content": t.text} for t in r.turns]
+    messages[0] = {"role": "user", "content": context + r.turns[0].text}
+    return await ai.structured(None, EXPLAIN_SCHEMA, effort="medium", max_tokens=8_000, messages=messages)
 
 
 @app.post("/v1/grade")

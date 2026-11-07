@@ -14,6 +14,7 @@ import et.tibeb.examprep.data.ExamItem
 import et.tibeb.examprep.data.Mock
 import et.tibeb.examprep.data.Note
 import et.tibeb.examprep.data.Question
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
@@ -130,6 +131,22 @@ open class ScreenshotTest {
             }
         }
         shot("13_chapter_photos")
+        // Explain chat with a short sample conversation
+        val qid = runBlocking { app.repo.dao.mistakes().first() }.first().id
+        val turns = listOf(
+            et.tibeb.examprep.data.Repository.Turn(true, rule.activity.getString(R.string.explain_q_mine)),
+            et.tibeb.examprep.data.Repository.Turn(false, "You probably differentiated **2x** as 2 but forgot the power rule on **3x³**.\n\n- f′(x) = 9x² − 2\n- f′(2) = 36 − 2 = **34**\n\nQuick check: what is f′(1)?"),
+        )
+        rule.runOnUiThread {
+            rule.activity.setContent {
+                et.tibeb.examprep.ui.theme.TibebTheme {
+                    androidx.compose.runtime.CompositionLocalProvider(et.tibeb.examprep.ui.LocalApp provides app) {
+                        et.tibeb.examprep.ui.screens.ExplainScreen(androidx.navigation.compose.rememberNavController(), qid, initialTurns = turns)
+                    }
+                }
+            }
+        }
+        shot("17_explain")
     }
 }
 

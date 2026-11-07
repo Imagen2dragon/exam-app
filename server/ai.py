@@ -33,14 +33,15 @@ class AIError(Exception):
 
 
 async def structured(content: list[dict] | str, schema: dict, *, effort: str = "high",
-                     max_tokens: int = 32_000) -> dict:
-    """One structured-output call. Streams so long outputs never hit HTTP timeouts."""
+                     max_tokens: int = 32_000, messages: list[dict] | None = None) -> dict:
+    """One structured-output call. Streams so long outputs never hit HTTP timeouts.
+    Pass `messages` (alternating user/assistant, ending with user) for a multi-turn chat instead of `content`."""
     try:
         async with client.beta.messages.stream(
             model=MODEL,
             max_tokens=max_tokens,
             system=SYSTEM,
-            messages=[{"role": "user", "content": content}],
+            messages=messages or [{"role": "user", "content": content}],
             thinking={"type": "adaptive"},
             output_config={"effort": effort, "format": {"type": "json_schema", "schema": schema}},
             betas=[FALLBACK_BETA],

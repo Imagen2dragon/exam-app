@@ -41,6 +41,12 @@ import java.net.URL
     val subject: String, val stream: String, val count: Int, val context: List<String>,
     val past_questions: List<String>, val weak_topics: List<String>,
 )
+@Serializable data class ChatTurnReq(val role: String, val text: String)
+@Serializable data class ExplainReq(
+    val subject: String, val question: String, val options: List<String>, val correct_answer: String,
+    val explanation: String, val student_answer: String, val language: String, val turns: List<ChatTurnReq>,
+)
+@Serializable data class ExplainRes(val reply: String)
 @Serializable data class GradeReq(
     val subject: String, val question: String, val reference_answer: String, val marks: Int,
     val student_text: String, val image_b64: String? = null, val image_mime: String = "image/jpeg",
@@ -62,6 +68,7 @@ open class Api(private val baseUrl: () -> String, private val token: () -> Strin
     suspend fun flashcards(r: FlashReq): FlashRes = post("/v1/flashcards", json.encodeToString(r), 180)
     suspend fun exam(r: ExamReq): ExamRes = post("/v1/exam", json.encodeToString(r), 600)
     suspend fun mockPaper(r: MockPaperReq): ExamRes = post("/v1/mock-paper", json.encodeToString(r), 900)
+    open suspend fun explain(r: ExplainReq): ExplainRes = post("/v1/explain", json.encodeToString(r), 120)
     suspend fun grade(r: GradeReq): GradeRes = post("/v1/grade", json.encodeToString(r), 240)
 
     suspend fun ping(): Boolean = withContext(Dispatchers.IO) {

@@ -89,6 +89,30 @@ class GradeReq(BaseModel):
     image_mime: Literal["image/jpeg", "image/png", "image/webp"] = "image/jpeg"
 
 
+class ChatTurn(BaseModel):
+    role: Literal["user", "assistant"]
+    text: str = Field(min_length=1, max_length=2_000)
+
+
+class ExplainReq(BaseModel):
+    """Follow-up questions about one exam question. Stateless: the app sends the whole short chat each time."""
+    subject: Subject
+    question: str = Field(max_length=4_000)
+    options: list[str] = Field(default_factory=list, max_length=5)
+    correct_answer: str = Field(max_length=1_000)
+    explanation: str = Field(default="", max_length=4_000)
+    student_answer: str = Field(default="", max_length=1_000)
+    language: Literal["en", "am"] = "en"
+    turns: list[ChatTurn] = Field(min_length=1, max_length=20)
+
+    @model_validator(mode="after")
+    def alternating(self):
+        roles = [t.role for t in self.turns]
+        if roles[0] != "user" or roles[-1] != "user" or any(a == b for a, b in zip(roles, roles[1:])):
+            raise ValueError("turns must alternate user/assistant, starting and ending with user")
+        return self
+
+
 def _obj(props: dict, required: list[str] | None = None) -> dict:
     return {
         "type": "object",
@@ -126,6 +150,7 @@ FLASH_SCHEMA = _obj({"cards": {"type": "array", "items": _obj({"front": S, "back
 EXAM_SCHEMA = _obj({"title": S, "minutes": I, "questions": {"type": "array", "items": QUESTION}})
 BLUEPRINT_SCHEMA = _obj({"sections": {"type": "array", "items": _obj({
     "grade": I, "unit": S, "topics": S, "count": I})}})
+EXPLAIN_SCHEMA = _obj({"reply": S})
 GRADE_SCHEMA = _obj({
     "score": N,
     "verdict": {"type": "string", "enum": ["correct", "partially_correct", "incorrect", "unreadable"]},

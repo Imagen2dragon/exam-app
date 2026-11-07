@@ -1,5 +1,31 @@
 # Tibeb (ጥበብ) – AI exam prep for the Ethiopian Grade 12 national exam
 
+## ⬇️ Download the Android app
+
+<table><tr><td>
+
+**[Download Tibeb 0.3.0 (APK, 1.5 MB)](https://github.com/Imagen2dragon/exam-app/raw/main/docs/tibeb-0.3.0-preview.apk)**
+
+Android 7.0 or newer · English and አማርኛ
+
+Or scan the QR code with your phone's camera →
+
+</td><td>
+
+<img src="docs/download-qr.png" alt="QR code linking to the Tibeb APK download" width="160">
+
+</td></tr></table>
+
+**How to install**
+1. Open the link on the phone and download the APK.
+2. Tap the downloaded file. If Android asks, allow **"Install unknown apps"** for your browser or file manager (this is normal for apps from outside the Play Store).
+3. If Play Protect shows a warning, tap **More details → Install anyway**. The app asks for only one permission: internet.
+4. Open Tibeb → ⚙️ Settings → enter the server address and device token to turn on the AI features. Flashcards and saved past papers work without them.
+
+This is a **preview build**. SHA-256: `a2d1e228f2cd9eb051ec5d4fbb7eae383a2aa0fff7b1812931fb7b318e89b7ce`
+
+---
+
 Android app plus a small backend. Upload textbooks, teacher guides and past national exams. Tibeb then:
 - **Creates exams** (multiple choice, calculation, short answer, *draw-a-graph* with photo grading) at national, hard or very hard level, weighted toward his weak topics
 - **Makes notes** (summary, detailed, formula sheet, cheat sheet), in English or Amharic

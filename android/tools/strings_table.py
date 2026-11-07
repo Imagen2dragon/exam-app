@@ -309,6 +309,16 @@ S = {
  "set_change": ("Change", "ቀይር"),
  "set_clear": ("Clear", "አጽዳ"),
  "ok": ("OK", "እሺ"),
+ "mastery_title": ("Topic mastery", "የርዕስ ብቃት ካርታ"),
+ "mastery_intro": ("Every topic from your books and exams. Tap one to practise exactly that topic.", "ከመጻሕፍትዎና ከፈተናዎችዎ የተገኙ ሁሉም ርዕሶች። ያንኑ ርዕስ ለመለማመድ አንዱን ይንኩ።"),
+ "mastery_empty": ("No topics yet. Upload a book or finish an exam.", "ገና ርዕስ የለም። መጽሐፍ ይጫኑ ወይም ፈተና ይጨርሱ።"),
+ "mastery_subject": ("%1$d%% strong", "%1$d%% ጠንካራ"),
+ "lvl_new": ("Not started", "ያልተጀመረ"),
+ "lvl_weak": ("Weak", "ደካማ"),
+ "lvl_dev": ("Developing", "በማደግ ላይ"),
+ "lvl_strong": ("Strong", "ጠንካራ"),
+ "mastery_tile_desc": ("%1$s: %2$s, %3$d%% correct. Tap to practise.", "%1$s፦ %2$s፣ %3$d%% ትክክል። ለመለማመድ ይንኩ።"),
+ "home_all_topics": ("All topics", "ሁሉም ርዕሶች"),
 }
 PLURALS = {
     "plan_cards": (("Review %d flashcard", "Review %d flashcards"), ("%d ፍላሽ ካርድ ይከልሱ", "%d ፍላሽ ካርዶችን ይከልሱ")),

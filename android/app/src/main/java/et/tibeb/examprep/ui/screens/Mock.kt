@@ -211,7 +211,7 @@ fun MockScreen(nav: NavHostController, mockId: Long) {
             }
             if (done.isNotEmpty()) {
                 val weakest = done.minBy { it.percent() }
-                TCard(onClick = { nav.navigate("newexam?subject=${weakest.subject}") }, container = MaterialTheme.colorScheme.secondaryContainer) {
+                TCard(onClick = { nav.navigate("newexam?subject=${android.net.Uri.encode(weakest.subject)}") }, container = MaterialTheme.colorScheme.secondaryContainer) {
                     Text(stringResource(R.string.mock_weakest, subjectName(weakest.subject), weakest.percent().toInt()), style = MaterialTheme.typography.titleSmall)
                     Text(stringResource(R.string.mock_weakest_body), style = MaterialTheme.typography.bodyMedium)
                 }

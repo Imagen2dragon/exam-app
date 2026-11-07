@@ -165,11 +165,11 @@ fun ExamsScreen(nav: NavHostController) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ExamSetupScreen(nav: NavHostController, initialSubject: String) {
+fun ExamSetupScreen(nav: NavHostController, initialSubject: String, initialTopic: String = "") {
     val app = LocalApp.current
     val settings by app.prefs.settings.collectAsState()
     var subject by remember { mutableStateOf(initialSubject.ifBlank { "Mathematics" }) }
-    var topic by remember { mutableStateOf("") }
+    var topic by remember { mutableStateOf(initialTopic) }
     var grade by remember { mutableIntStateOf(settings.grade) }
     var count by remember { mutableFloatStateOf(20f) }
     var difficulty by remember { mutableStateOf("hard") }
@@ -181,7 +181,7 @@ fun ExamSetupScreen(nav: NavHostController, initialSubject: String) {
     val job = app.repo.jobs.collectAsState().value["exam"]
 
     LaunchedEffect(job?.resultId) {
-        job?.resultId?.let { id -> app.repo.clearJob("exam"); nav.navigate("exam/$id") { popUpTo("newexam?subject={subject}") { inclusive = true } } }
+        job?.resultId?.let { id -> app.repo.clearJob("exam"); nav.navigate("exam/$id") { popUpTo("newexam?subject={subject}&topic={topic}") { inclusive = true } } }
     }
 
     Column(Modifier.fillMaxSize()) {
@@ -418,7 +418,7 @@ fun ResultScreen(nav: NavHostController, examId: Long) {
             val mockId = e.mockId
             if (mockId != null) Button(onClick = { nav.navigate("mock/$mockId") { popUpTo("exams") } },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(top = 8.dp)) { Text(stringResource(R.string.res_back_mock)) }
-            else Button(onClick = { nav.navigate("newexam?subject=${e.subject}") }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(top = 8.dp)) {
+            else Button(onClick = { nav.navigate("newexam?subject=${android.net.Uri.encode(e.subject)}") }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(top = 8.dp)) {
                 Text(stringResource(R.string.res_focus))
             }
         }

@@ -144,6 +144,8 @@ data class ItemWithQuestion(
     val marks: Int, val topic: String, val subject: String,
 )
 
+data class SubjectTopic(val subject: String, val topic: String)
+
 data class TopicStat(val subject: String, val topic: String, val attempted: Int, val earned: Double, val possible: Double) {
     val accuracy get() = if (possible == 0.0) 0.0 else earned / possible
 }

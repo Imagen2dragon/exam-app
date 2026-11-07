@@ -301,6 +301,9 @@
     <string name="explain_note">Needs internet. Chats are not saved on the phone.</string>
     <string name="explain_you">You</string>
     <string name="explain_retry">Try again</string>
+    <string name="err_402">Today\'s AI budget for this phone is used up. Offline features still work; it resets at midnight.</string>
+    <string name="set_usage">Today\'s AI use: $%1$s of $%2$s (%3$d requests)</string>
+    <string name="set_usage_unlimited">Today\'s AI use: $%1$s (%2$d requests, no daily limit)</string>
     <plurals name="plan_cards">
         <item quantity="one">Review %d flashcard</item>
         <item quantity="other">Review %d flashcards</item>

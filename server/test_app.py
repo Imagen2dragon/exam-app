@@ -1,14 +1,9 @@
 """Offline tests: auth, rate limit, validation, and the AI wiring (Claude is mocked)."""
-import os
+import pytest
+from fastapi.testclient import TestClient
 
-os.environ["DEVICE_TOKENS"] = "t" * 32
-os.environ["RATE_LIMIT_PER_MIN"] = "3"
-os.environ.setdefault("ANTHROPIC_API_KEY", "test-not-used")
-
-from fastapi.testclient import TestClient  # noqa: E402
-
-import ai  # noqa: E402
-import app as server  # noqa: E402
+import ai
+import app as server
 
 client = TestClient(server.app)
 AUTH = {"Authorization": "Bearer " + "t" * 32}
@@ -35,11 +30,9 @@ async def fake_structured(content, schema, **kw):
     return {"title": "t", "minutes": 10, "questions": []}
 
 
-ai.structured = fake_structured
-server.ai.structured = fake_structured
-
-
-def setup_function():
+@pytest.fixture(autouse=True)
+def fake_ai(monkeypatch):
+    monkeypatch.setattr(ai, "structured", fake_structured)
     server._hits.clear()
     CALLS.clear()
 
@@ -80,7 +73,7 @@ def test_grade_clamps_score_and_sends_image():
 def test_ai_error_maps_to_status():
     async def boom(*a, **k):
         raise ai.AIError(422, "declined")
-    server.ai.structured = boom
+    ai.structured = boom  # restored by the fake_ai fixture
     try:
         r = client.post("/v1/flashcards", json={"subject": "Biology", "topic": "Cells", "grade": 10},
                         headers=AUTH)

@@ -332,6 +332,9 @@ S = {
  "explain_note": ("Needs internet. Chats are not saved on the phone.", "ኢንተርኔት ያስፈልጋል። ውይይቶች በስልኩ ላይ አይቀመጡም።"),
  "explain_you": ("You", "እርስዎ"),
  "explain_retry": ("Try again", "እንደገና ሞክር"),
+ "err_402": ("Today's AI budget for this phone is used up. Offline features still work; it resets at midnight.", "የዛሬው የAI በጀት ለዚህ ስልክ አልቋል። ያለ ኢንተርኔት የሚሠሩ ክፍሎች ይሠራሉ፤ እኩለ ሌሊት ላይ እንደገና ይጀምራል።"),
+ "set_usage": ("Today's AI use: $%1$s of $%2$s (%3$d requests)", "የዛሬ የAI አጠቃቀም፦ $%1$s ከ$%2$s (%3$d ጥያቄዎች)"),
+ "set_usage_unlimited": ("Today's AI use: $%1$s (%2$d requests, no daily limit)", "የዛሬ የAI አጠቃቀም፦ $%1$s (%2$d ጥያቄዎች፣ የዕለት ገደብ የለም)"),
 }
 PLURALS = {
     "plan_cards": (("Review %d flashcard", "Review %d flashcards"), ("%d ፍላሽ ካርድ ይከልሱ", "%d ፍላሽ ካርዶችን ይከልሱ")),

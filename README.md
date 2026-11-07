@@ -52,6 +52,11 @@ uvicorn app:app --host 127.0.0.1 --port 8080
 For the phone to reach it, put it behind HTTPS (e.g. Caddy: `your.domain { reverse_proxy 127.0.0.1:8080 }`).
 Tests: `pip install pytest && python -m pytest -q` (Claude is mocked; no key needed).
 
+**Costs:** every AI call is recorded with its tokens and estimated cost (only a hash of each device token is stored). Each device has a daily budget (`DAILY_BUDGET_USD`, default $5, resets at midnight Addis Ababa time); the app shows today's use in Settings. See the spend per day and device with:
+```bash
+python usage_report.py 7
+```
+
 ## 2. Build the app
 Requires JDK 17+ and the Android SDK (platform 36).
 ```bash

@@ -3,6 +3,8 @@ import json
 
 import anthropic
 
+import usage
+
 MODEL = "claude-opus-5-5"
 # Opus 5.5 can decline some requests via safety classifiers; "default" lets the API
 # retry on Anthropic's recommended fallback model inside the same call.
@@ -48,6 +50,7 @@ async def structured(content: list[dict] | str, schema: dict, *, effort: str = "
             fallbacks="default",
         ) as stream:
             msg = await stream.get_final_message()
+        usage.record_message(msg)  # cost tracking + per-device daily budget
     except anthropic.RateLimitError as e:
         raise AIError(503, "AI service is busy, try again in a minute") from e
     except anthropic.BadRequestError as e:

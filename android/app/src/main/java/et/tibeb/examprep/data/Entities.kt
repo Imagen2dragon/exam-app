@@ -101,6 +101,20 @@ data class Exam(
     val mockId: Long? = null,   // set when this exam is one paper of a full national mock
 )
 
+/** An overnight question pack ordered from the server (Message Batches API, half price). */
+@Entity
+data class Pack(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val serverId: String,
+    val subject: String,
+    val count: Int,
+    val topics: String,               // comma-separated, may be empty
+    val status: String = "processing", // processing | imported | failed
+    val received: Int = 0,
+    val createdAt: Long = System.currentTimeMillis(),
+    val error: String = "",
+)
+
 /** A full national mock: one paper per subject of the stream, each scored out of 100 (total 600). */
 @Entity
 data class Mock(

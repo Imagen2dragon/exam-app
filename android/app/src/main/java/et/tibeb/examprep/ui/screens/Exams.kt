@@ -125,6 +125,11 @@ fun ExamsScreen(nav: NavHostController) {
                     Text(stringResource(R.string.ex_mock_card_body),
                         color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f))
                 }
+                Spacer(Modifier.height(10.dp))
+                TCard(onClick = { nav.navigate("packs") }, container = MaterialTheme.colorScheme.tertiaryContainer) {
+                    Text(stringResource(R.string.packs_card_title), style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.packs_card_body), style = MaterialTheme.typography.bodyMedium)
+                }
             }
             items(mocks, key = { "m${it.id}" }) { m ->
                 val papers = allExams.filter { it.mockId == m.id }

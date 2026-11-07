@@ -54,6 +54,10 @@ open class ScreenshotTest {
         dao.insertChunks(listOf("Kinematics", "Waves", "Optics", "Electrostatics", "Thermodynamics").map {
             Chunk(docId = doc, subject = "Physics", grade = 12, unit = "Unit", topic = it, text = "…") })
         dao.insertChunks(List(42) { Chunk(docId = doc, subject = "Mathematics", grade = 12, unit = "Unit 3", topic = "Limits", text = "…") })
+        dao.insert(et.tibeb.examprep.data.Pack(serverId = "a", subject = "Chemistry", count = 100, topics = "Equilibrium, Acids and bases",
+            status = "processing"))
+        dao.insert(et.tibeb.examprep.data.Pack(serverId = "b", subject = "Physics", count = 200, topics = "", status = "imported", received = 196,
+            createdAt = System.currentTimeMillis() - 86_400_000L))
         dao.insert(Note(subject = "Physics", topic = "Projectile motion", title = "Projectile motion – revision notes",
             markdown = "# Projectile motion\n## Key ideas\n- Horizontal velocity is **constant**: `vx = v0 cos θ`\n- Vertical motion has acceleration **g = 9.8 m/s²** downward\n## Exam traps\n- Time of flight depends only on the **vertical** component\n- At the top, speed is **not zero** – only vy is zero"))
         dao.insertCards(listOf(Card(subject = "Chemistry", topic = "Equilibrium", front = "What does Le Chatelier's principle state?",
@@ -116,6 +120,7 @@ open class ScreenshotTest {
         rule.runOnUiThread { rule.activity.navForTest?.navigate("settings") }; shot("12_settings")
         rule.runOnUiThread { rule.activity.navForTest?.navigate("mistakes") }; shot("14_mistakes")
         rule.runOnUiThread { rule.activity.navForTest?.navigate("mastery") }; shot("15_mastery")
+        rule.runOnUiThread { rule.activity.navForTest?.navigate("packs") }; shot("18_packs")
         rule.runOnUiThread { rule.activity.navForTest?.navigate("newexam?subject=${android.net.Uri.encode("Scholastic Aptitude")}&topic=${android.net.Uri.encode("Number series")}") }
         shot("16_new_exam_topic")
         // Chapter photos screen with three sample "pages"

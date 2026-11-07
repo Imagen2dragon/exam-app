@@ -127,4 +127,12 @@ Android phone (1.4 MB APK, Android 7+)              Your server (small VPS)     
 - ✅ **Topic mastery map**: every topic from books and exams as a tile (not started / weak / developing / strong, written out, not colour-only); tap a tile to practise that topic.
 - ✅ **"Explain this question" chat**: ask follow-up questions about any reviewed question or mistake, in English or Amharic. Online only; chats are not stored.
 
-**Step 3 is complete.** Next: Step 4 (cost and scale: prompt caching, batch question packs, model choice per task) and Step 5 (hardening: encrypted database, certificate pinning, accessibility pass on a low-end phone, exam focus lock).
+**Step 3 is complete.**
+
+## 9. Step 4 progress (v0.7.0): AI cost
+- ✅ **Usage tracking + daily budget per device**: every AI call is recorded with tokens and estimated cost (device stored as a hash). `DAILY_BUDGET_USD` caps each phone, Settings shows today's use, and `usage_report.py` shows the owner's costs.
+- ✅ **Per-task models** (owner's choice): Claude Haiku 5.5 for flashcards and notes (about 40x cheaper per input token), with a retry on Opus 5.5 if Haiku declines; Opus 5.5 for everything else.
+- ✅ **Prompt caching**: the system prompt, the shared mock-paper prefix (the first section streams first, then the rest read the cache) and the tutor chat history. Cache reads cost 5% of input on Opus 5.5.
+- ✅ **Overnight question packs**: 50–200 new questions written through the Message Batches API at **half price**, collected in the background and added to the offline bank for offline exams and mocks.
+
+**Step 4 is complete.** Next (chosen by the owner): **Supabase** (accounts, cloud backup, shared packs for classmates, progress dashboard), then an **on-phone offline tutor**, then Step 5 (hardening: encrypted database, certificate pinning, accessibility pass on a low-end phone, exam focus lock).

@@ -141,6 +141,9 @@ fun StudyScreen(nav: NavHostController) {
             OutlinedButton(onClick = { nav.navigate("mistakes") }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(top = 8.dp)) {
                 Text(stringResource(R.string.mistakes_title))
             }
+            OutlinedButton(onClick = { nav.navigate("mastery") }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(top = 8.dp)) {
+                Text(stringResource(R.string.mastery_title))
+            }
             SectionTitle(stringResource(R.string.study_my_notes))
         }
         if (notes.isEmpty()) item { EmptyState(stringResource(R.string.study_notes_empty_title), stringResource(R.string.study_notes_empty_body)) }

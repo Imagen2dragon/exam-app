@@ -50,6 +50,8 @@ open class ScreenshotTest {
             status = "queued", error = "No connection to the server. Offline features still work."))
         dao.insert(Document(title = "Chemistry 2015 E.C. national exam", subject = "Chemistry", grade = 12, docType = "past_exam",
             status = "failed", error = "Device token rejected. Check it in Settings."))
+        dao.insertChunks(listOf("Kinematics", "Waves", "Optics", "Electrostatics", "Thermodynamics").map {
+            Chunk(docId = doc, subject = "Physics", grade = 12, unit = "Unit", topic = it, text = "…") })
         dao.insertChunks(List(42) { Chunk(docId = doc, subject = "Mathematics", grade = 12, unit = "Unit 3", topic = "Limits", text = "…") })
         dao.insert(Note(subject = "Physics", topic = "Projectile motion", title = "Projectile motion – revision notes",
             markdown = "# Projectile motion\n## Key ideas\n- Horizontal velocity is **constant**: `vx = v0 cos θ`\n- Vertical motion has acceleration **g = 9.8 m/s²** downward\n## Exam traps\n- Time of flight depends only on the **vertical** component\n- At the top, speed is **not zero** – only vy is zero"))
@@ -112,6 +114,9 @@ open class ScreenshotTest {
         rule.runOnUiThread { rule.activity.navForTest?.navigate("mock/$mockIdForTest") }; shot("11_mock_hub")
         rule.runOnUiThread { rule.activity.navForTest?.navigate("settings") }; shot("12_settings")
         rule.runOnUiThread { rule.activity.navForTest?.navigate("mistakes") }; shot("14_mistakes")
+        rule.runOnUiThread { rule.activity.navForTest?.navigate("mastery") }; shot("15_mastery")
+        rule.runOnUiThread { rule.activity.navForTest?.navigate("newexam?subject=${android.net.Uri.encode("Scholastic Aptitude")}&topic=${android.net.Uri.encode("Number series")}") }
+        shot("16_new_exam_topic")
         // Chapter photos screen with three sample "pages"
         val app = rule.activity.application as TibebApp
         val pages = (1..3).map { n -> samplePage(n) }

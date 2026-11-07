@@ -35,6 +35,7 @@ interface StudyDao {
     suspend fun randomChunks(subject: String, limit: Int): List<Chunk>
     @Query("SELECT DISTINCT topic FROM Chunk WHERE subject = :subject ORDER BY topic")
     fun topics(subject: String): Flow<List<String>>
+    @Query("SELECT DISTINCT subject, topic FROM Chunk") fun allBookTopics(): Flow<List<SubjectTopic>>
 
     // Question bank
     @Insert suspend fun insertQuestions(q: List<Question>): List<Long>

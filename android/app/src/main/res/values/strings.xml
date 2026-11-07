@@ -278,6 +278,16 @@
     <string name="set_change">Change</string>
     <string name="set_clear">Clear</string>
     <string name="ok">OK</string>
+    <string name="mastery_title">Topic mastery</string>
+    <string name="mastery_intro">Every topic from your books and exams. Tap one to practise exactly that topic.</string>
+    <string name="mastery_empty">No topics yet. Upload a book or finish an exam.</string>
+    <string name="mastery_subject">%1$d%% strong</string>
+    <string name="lvl_new">Not started</string>
+    <string name="lvl_weak">Weak</string>
+    <string name="lvl_dev">Developing</string>
+    <string name="lvl_strong">Strong</string>
+    <string name="mastery_tile_desc">%1$s: %2$s, %3$d%% correct. Tap to practise.</string>
+    <string name="home_all_topics">All topics</string>
     <plurals name="plan_cards">
         <item quantity="one">Review %d flashcard</item>
         <item quantity="other">Review %d flashcards</item>

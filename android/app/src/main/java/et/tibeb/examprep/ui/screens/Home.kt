@@ -139,7 +139,7 @@ fun HomeScreen(nav: NavHostController) {
                     when (item.kind) {
                         Planner.Kind.REVIEW_CARDS -> nav.navigate("review")
                         Planner.Kind.FIX_MISTAKES -> nav.navigate("mistakes")
-                        Planner.Kind.PRACTICE_EXAM -> nav.navigate("newexam?subject=${item.subject}")
+                        Planner.Kind.PRACTICE_EXAM -> nav.navigate("newexam?subject=${android.net.Uri.encode(item.subject)}")
                         Planner.Kind.FULL_MOCK -> nav.navigate("mocksetup")
                     }
                 }
@@ -163,7 +163,10 @@ fun HomeScreen(nav: NavHostController) {
         }
         val weak = stats.filter { it.attempted >= 2 }.sortedBy { it.accuracy }.take(4)
         if (weak.isNotEmpty()) item {
-            SectionTitle(stringResource(R.string.home_needs_work))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                SectionTitle(stringResource(R.string.home_needs_work), Modifier.weight(1f))
+                androidx.compose.material3.TextButton(onClick = { nav.navigate("mastery") }) { Text(stringResource(R.string.home_all_topics)) }
+            }
             TCard {
                 weak.forEach { s ->
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 6.dp)) {
@@ -185,7 +188,7 @@ fun HomeScreen(nav: NavHostController) {
             LazyVerticalGrid(GridCells.Fixed(2), Modifier.height(((subjects.size + 1) / 2 * 92).dp), userScrollEnabled = false,
                 horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(subjects) { s ->
-                    TCard(onClick = { nav.navigate("newexam?subject=$s") }, container = subjectColor(s, dark).copy(alpha = 0.14f)) {
+                    TCard(onClick = { nav.navigate("newexam?subject=${android.net.Uri.encode(s)}") }, container = subjectColor(s, dark).copy(alpha = 0.14f)) {
                         SubjectDot(s, 14.dp)
                         Spacer(Modifier.height(8.dp))
                         Text(subjectName(s), style = MaterialTheme.typography.titleSmall, maxLines = 1)

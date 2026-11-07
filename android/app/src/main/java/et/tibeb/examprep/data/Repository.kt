@@ -45,7 +45,7 @@ data class ExamConfig(
 
 const val MAX_PAGES = 30
 
-class Repository(private val ctx: Context, private val db: AppDb, private val api: Api, private val str: (Int, Array<out Any>) -> String) {
+class Repository(private val ctx: Context, val db: AppDb, private val api: Api, private val str: (Int, Array<out Any>) -> String) {
     private fun s(id: Int, vararg a: Any) = str(id, a)
     val dao = db.dao()
 

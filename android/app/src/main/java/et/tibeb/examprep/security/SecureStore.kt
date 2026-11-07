@@ -15,7 +15,7 @@ import javax.crypto.spec.GCMParameterSpec
  * Keystore (hardware-backed on most phones). The key never leaves the secure hardware,
  * so a copied prefs file is useless on another device.
  */
-class SecureStore(ctx: Context) {
+open class SecureStore(ctx: Context) {
     private val prefs = ctx.getSharedPreferences("secure", Context.MODE_PRIVATE)
     private val ks by lazy { KeyStore.getInstance("AndroidKeyStore").apply { load(null) } }
 
@@ -32,13 +32,15 @@ class SecureStore(ctx: Context) {
         return gen.generateKey()
     }
 
-    fun put(name: String, value: String) {
+    open fun put(name: String, value: String) {
         val c = Cipher.getInstance(TRANSFORM).apply { init(Cipher.ENCRYPT_MODE, key()) }
         val blob = c.iv + c.doFinal(value.toByteArray())
         prefs.edit().putString(name, Base64.encodeToString(blob, Base64.NO_WRAP)).apply()
     }
 
-    fun get(name: String): String? = try {
+    open fun remove(name: String) { prefs.edit().remove(name).apply() }
+
+    open fun get(name: String): String? = try {
         prefs.getString(name, null)?.let {
             val blob = Base64.decode(it, Base64.NO_WRAP)
             val c = Cipher.getInstance(TRANSFORM)

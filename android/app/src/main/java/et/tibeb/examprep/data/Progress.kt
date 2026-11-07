@@ -32,12 +32,14 @@ import java.util.concurrent.TimeUnit
     val app_version: String, val generated_at: Long, val stream: String, val grade: Int, val exam_date: Long?,
     val streak: Int, val totals: Totals, val subjects: List<SubjectSummary>, val topics: List<TopicSummary>,
     val recent_exams: List<ExamSummary>, val mocks: List<MockSummary>, val activity_days: List<Long>, val books: List<BookSummary>,
+    val last_backup: Long? = null,
 )
 
 private fun pct(e: Exam) = if (e.maxScore <= 0) 0.0 else (e.score / e.maxScore * 100).coerceIn(0.0, 100.0)
 
 /** Builds the summary from the phone's database. Pure reads; capped to the server's size limits. */
-suspend fun buildProgress(dao: StudyDao, stream: String, grade: Int, examDate: Long?, activeDays: Set<Long>, now: Long): ProgressSummary {
+suspend fun buildProgress(dao: StudyDao, stream: String, grade: Int, examDate: Long?, activeDays: Set<Long>, now: Long,
+                          lastBackup: Long? = null): ProgressSummary {
     val exams = dao.allExams().first()
     val finished = exams.filter { it.finishedAt > 0 && it.maxScore > 0 }.sortedByDescending { it.finishedAt }
     val mocks = dao.mocks().first().map { m ->
@@ -64,6 +66,7 @@ suspend fun buildProgress(dao: StudyDao, stream: String, grade: Int, examDate: L
         mocks = mocks.takeLast(20),
         activity_days = activeDays.sorted().takeLast(400),
         books = docs.take(150).map { BookSummary(it.title.take(200), it.subject, it.status) },
+        last_backup = lastBackup,
     )
 }
 

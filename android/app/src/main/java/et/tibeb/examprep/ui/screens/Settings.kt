@@ -141,6 +141,7 @@ fun SettingsScreen(nav: NavHostController) {
                     style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 8.dp))
             }
+            BackupSection()
             SectionTitle(stringResource(R.string.set_privacy))
             TCard {
                 Text(stringResource(R.string.set_privacy_body),

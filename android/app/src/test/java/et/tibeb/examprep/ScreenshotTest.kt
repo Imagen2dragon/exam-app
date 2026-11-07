@@ -5,6 +5,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import com.github.takahirom.roborazzi.captureRoboImage
 import et.tibeb.examprep.data.Card
 import et.tibeb.examprep.data.Chunk
@@ -155,6 +156,32 @@ open class ScreenshotTest {
             }
         }
         shot("17_explain")
+
+    }
+
+    /** Settings → Cloud backup (against a local stand-in for Supabase): the recovery code, then backups running. */
+    @Test fun backupCard() {
+        val tibeb = rule.activity.application as TibebApp
+        tibeb.getSharedPreferences("settings", 0).edit().putBoolean("sharing_notice_seen", true).commit()
+        tibeb.prefs.save(tibeb.prefs.settings.value.copy(onboarded = true, serverUrl = "https://tibeb.example.com"))
+        rule.activityRule.scenario.recreate()
+
+        val fake = FakeSupabase()
+        try {
+            val b = et.tibeb.examprep.backup.Backup(tibeb, tibeb.prefs, MemorySecureStore(tibeb), { tibeb.repo.db },
+                fetchConfig = { et.tibeb.examprep.backup.BackupConfig(fake.url, fake.key) },
+                client = { et.tibeb.examprep.backup.Supabase(it, allowHttpForTests = true) }, newCode = { "K7Q2M-9XD4T-PAHW3-N8CRE-6YB2F" })
+            runBlocking { b.config(); b.signIn("brother@example.com", "correct horse 9") }
+            tibeb.backup = b
+            rule.runOnUiThread { rule.activity.navForTest?.navigate("settings") }
+            rule.waitForIdle()
+            rule.onNodeWithText(str(R.string.bk_wrote_it)).performScrollTo(); shot("20_backup_code")
+            runBlocking { b.confirmCode() }
+            rule.waitForIdle()
+            rule.onNodeWithText(str(R.string.bk_sign_out)).performScrollTo(); shot("21_backup_on")
+        } finally {
+            fake.stop()
+        }
     }
 }
 

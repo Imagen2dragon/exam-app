@@ -105,6 +105,9 @@ open class ScreenshotTest {
     }
 
     @Test fun screens() {
+        shot("19_sharing_notice")    // first launch after the update shows the sharing notice
+        rule.activity.getSharedPreferences("settings", 0).edit().putBoolean("sharing_notice_seen", true).commit()
+        rule.activityRule.scenario.recreate()
         val examId = seed()
         shot("01_home")
         rule.onNodeWithText(str(R.string.tab_library)).performClick(); shot("02_library")

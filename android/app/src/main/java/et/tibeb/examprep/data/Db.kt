@@ -40,6 +40,7 @@ interface StudyDao {
     // Question bank
     @Insert suspend fun insertQuestions(q: List<Question>): List<Long>
     // The offline bank = questions from uploaded past papers + downloaded question packs.
+    @Query("SELECT COUNT(*) FROM Question WHERE source IN ('past', 'pack')") suspend fun bankCount(): Int
     @Query("SELECT COUNT(*) FROM Question WHERE subject = :subject AND source IN ('past', 'pack')")
     fun pastCount(subject: String): Flow<Int>
     @Query("""SELECT * FROM Question WHERE subject = :subject AND source IN ('past', 'pack') AND type IN (:types)

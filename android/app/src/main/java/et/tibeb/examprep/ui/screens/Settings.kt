@@ -133,6 +133,14 @@ fun SettingsScreen(nav: NavHostController) {
                         modifier = Modifier.padding(top = 6.dp))
                 }
             }
+            SectionTitle(stringResource(R.string.share_title))
+            TCard {
+                Text(stringResource(R.string.share_body), style = MaterialTheme.typography.bodyMedium)
+                val last = app.lastShared()
+                Text(if (last > 0) stringResource(R.string.share_last, date(last)) else stringResource(R.string.share_never),
+                    style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp))
+            }
             SectionTitle(stringResource(R.string.set_privacy))
             TCard {
                 Text(stringResource(R.string.set_privacy_body),

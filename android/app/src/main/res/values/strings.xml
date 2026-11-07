@@ -233,6 +233,11 @@
     <string name="err_429">Too many requests. Wait a minute.</string>
     <string name="err_503">The AI service is busy. Try again in a minute.</string>
     <string name="err_server">Server error (%1$d)</string>
+    <string name="update_title">Update available: %1$s</string>
+    <string name="update_body">Tap to download and install. Your books, notes and results are kept.</string>
+    <string name="set_updates">Check for app updates</string>
+    <string name="set_updates_body">Once a day, asks GitHub for the latest version number. Nothing about you or your studies is sent.</string>
+    <string name="set_version">Version %1$s</string>
     <plurals name="marks">
         <item quantity="one">%d mark</item>
         <item quantity="other">%d marks</item>

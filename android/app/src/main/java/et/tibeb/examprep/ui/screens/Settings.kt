@@ -2,6 +2,10 @@ package et.tibeb.examprep.ui.screens
 
 import androidx.compose.ui.res.stringResource
 import et.tibeb.examprep.R
+import et.tibeb.examprep.BuildConfig
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.Switch
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import et.tibeb.examprep.ui.streamName
 import et.tibeb.examprep.util.Lang
@@ -108,6 +112,19 @@ fun SettingsScreen(nav: NavHostController) {
                 Text(stringResource(R.string.set_privacy_body),
                     style = MaterialTheme.typography.bodyMedium)
                 OutlinedButton(onClick = { app.prefs.setToken(""); status = strRemoved }, modifier = Modifier.padding(top = 8.dp)) { Text(stringResource(R.string.set_remove_token)) }
+            }
+            TCard {
+                var checkUpdates by remember { mutableStateOf(app.updates.enabled) }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.set_updates), style = MaterialTheme.typography.titleSmall)
+                        Text(stringResource(R.string.set_updates_body), style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Switch(checkUpdates, { checkUpdates = it; app.updates.enabled = it })
+                }
+                Text(stringResource(R.string.set_version, BuildConfig.VERSION_NAME), style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp))
             }
         }
     }

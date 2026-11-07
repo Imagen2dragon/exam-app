@@ -264,5 +264,10 @@ S = {
  "err_429": ("Too many requests. Wait a minute.", "በጣም ብዙ ጥያቄዎች ተልከዋል። አንድ ደቂቃ ይጠብቁ።"),
  "err_503": ("The AI service is busy. Try again in a minute.", "የAI አገልግሎቱ ተይዟል። ከአንድ ደቂቃ በኋላ ይሞክሩ።"),
  "err_server": ("Server error (%1$d)", "የሰርቨር ስህተት (%1$d)"),
+ "update_title": ("Update available: %1$s", "አዲስ ስሪት ደርሷል፦ %1$s"),
+ "update_body": ("Tap to download and install. Your books, notes and results are kept.", "ለማውረድና ለመጫን ይንኩ። መጻሕፍትዎ፣ ማስታወሻዎችዎና ውጤቶችዎ አይጠፉም።"),
+ "set_updates": ("Check for app updates", "የመተግበሪያ ዝማኔዎችን ፈልግ"),
+ "set_updates_body": ("Once a day, asks GitHub for the latest version number. Nothing about you or your studies is sent.", "በቀን አንድ ጊዜ የቅርብ ጊዜውን ስሪት ቁጥር ከGitHub ይጠይቃል። ስለ እርስዎም ሆነ ስለ ጥናትዎ ምንም መረጃ አይላክም።"),
+ "set_version": ("Version %1$s", "ስሪት %1$s"),
 }
 PLURALS = {"marks": (("%d mark", "%d marks"), ("%d ነጥብ", "%d ነጥብ"))}

@@ -12,6 +12,10 @@
   (unit, migration, language and screenshot tests; release build runs lint)
 - UI changes: `./gradlew recordRoborazziDebug` and look at `docs/screenshots/` (English) and `docs/screenshots/am/` (Amharic).
 
+## Releases
+- Official APKs come only from `.github/workflows/release.yml` on a `vX.Y.Z` tag (see `docs/RELEASING.md`).
+- Never commit keystores or signing secrets. Local release builds without the secrets are debug-signed and must not be published.
+
 ## Project rules
 - The Anthropic API key lives only on the server (`server/.env`, git-ignored). Never put keys in the app or the repo; this repository is public.
 - Every user-visible string goes through `android/tools/strings_table.py` (English + Amharic), then `python3 android/tools/gen_strings.py`.

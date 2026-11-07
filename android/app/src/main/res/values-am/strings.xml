@@ -319,6 +319,12 @@
     <string name="pack_failed">ጥቅሉ ሊዘጋጅ አልቻለም። እባክዎ እንደገና ይዘዙ።</string>
     <string name="pack_expired">ጥቅሉ በጣም ዘገየ፤ ተሰርዟል። እባክዎ እንደገና ይዘዙ።</string>
     <string name="pack_line">%1$s · %2$d ጥያቄዎች</string>
+    <string name="share_title">የእድገት ማጋራት</string>
+    <string name="share_body">የፈተና ውጤቶችዎ፣ የሙከራ ፈተና ነጥቦችዎ፣ የርዕስ ብቃትዎ፣ ያልታረሙ ስህተቶች ብዛት፣ ተከታታይ የጥናት ቀናትና የመጻሕፍት ርዕሶች ዝግጅትዎን እንዲከታተልና እንዲደግፍ ለአስተዳዳሪዎ (ጥበብን ላዘጋጀልዎ ሰው) ይጋራሉ። ማስታወሻዎችዎና ከአስጠኚው ጋር ያደረጓቸው ውይይቶች ፈጽሞ አይጋሩም።</string>
+    <string name="share_last">ለመጨረሻ ጊዜ የተጋራው፦ %1$s</string>
+    <string name="share_never">ገና አልተጋራም (ኢንተርኔት ያስፈልጋል)</string>
+    <string name="share_notice_title">እድገትዎ ይጋራል</string>
+    <string name="ok_understood">ተረድቻለሁ</string>
     <plurals name="plan_cards">
         <item quantity="one">%d ፍላሽ ካርድ ይከልሱ</item>
         <item quantity="other">%d ፍላሽ ካርዶችን ይከልሱ</item>

@@ -78,6 +78,8 @@ open class Api(private val baseUrl: () -> String, private val token: () -> Strin
     open suspend fun explain(r: ExplainReq): ExplainRes = post("/v1/explain", json.encodeToString(r), 120)
     suspend fun orderPack(r: PackReq): PackCreated = post("/v1/packs", json.encodeToString(r), 120)
     open suspend fun pack(id: String): PackRes = get("/v1/packs/" + java.net.URLEncoder.encode(id, "UTF-8"), 300)
+    open suspend fun sendProgress(p: et.tibeb.examprep.data.ProgressSummary): Unit =
+        post<kotlinx.serialization.json.JsonObject>("/v1/progress", json.encodeToString(p), 60).let { }
     suspend fun grade(r: GradeReq): GradeRes = post("/v1/grade", json.encodeToString(r), 240)
 
     /** Today's estimated AI spend for this device; null when offline or not configured. */

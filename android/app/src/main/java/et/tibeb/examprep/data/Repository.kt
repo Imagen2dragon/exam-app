@@ -328,6 +328,7 @@ class Repository(private val ctx: Context, private val db: AppDb, private val ap
         dao.update(exam.copy(finishedAt = System.currentTimeMillis(), score = after.sumOf { it.earned }))
         addMistakeCards(after)
         recordActivity()
+        ProgressWorker.now(ctx)   // share the new result with the admin when online
         if (aiFailures > 0) error(s(R.string.err_grading_offline, aiFailures))
         return examId
     }

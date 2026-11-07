@@ -92,6 +92,19 @@ fun HomeScreen(nav: NavHostController) {
     val ctx = LocalContext.current
     LaunchedEffect(Unit) { app.updates.check() } // at most once a day
 
+    // One-time, plain-language notice that progress is shared with the admin (never hidden).
+    var sharingNotice by remember { mutableStateOf(!app.getSharedPreferences("settings", 0).getBoolean("sharing_notice_seen", false)) }
+    if (sharingNotice) androidx.compose.material3.AlertDialog(
+        onDismissRequest = {},
+        title = { Text(stringResource(R.string.share_notice_title)) },
+        text = { Text(stringResource(R.string.share_body)) },
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = {
+                app.getSharedPreferences("settings", 0).edit().putBoolean("sharing_notice_seen", true).apply(); sharingNotice = false
+            }) { Text(stringResource(R.string.ok_understood)) }
+        },
+    )
+
     if (pickDate) ExamDateDialog(settings.examDate.takeIf { it > 0 }, { pickDate = false }) { picked ->
         pickDate = false; app.prefs.save(settings.copy(examDate = picked ?: 0))
     }

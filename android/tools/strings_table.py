@@ -350,6 +350,12 @@ S = {
  "pack_failed": ("The pack could not be written. Please order again.", "ጥቅሉ ሊዘጋጅ አልቻለም። እባክዎ እንደገና ይዘዙ።"),
  "pack_expired": ("The pack took too long and was cancelled. Please order again.", "ጥቅሉ በጣም ዘገየ፤ ተሰርዟል። እባክዎ እንደገና ይዘዙ።"),
  "pack_line": ("%1$s · %2$d questions", "%1$s · %2$d ጥያቄዎች"),
+ "share_title": ("Progress sharing", "የእድገት ማጋራት"),
+ "share_body": ("Your exam results, mock scores, topic mastery, number of open mistakes, study streak and book titles are shared with your admin (the person who set up Tibeb for you), so they can follow and support your preparation. Your notes and tutor chats are never shared.", "የፈተና ውጤቶችዎ፣ የሙከራ ፈተና ነጥቦችዎ፣ የርዕስ ብቃትዎ፣ ያልታረሙ ስህተቶች ብዛት፣ ተከታታይ የጥናት ቀናትና የመጻሕፍት ርዕሶች ዝግጅትዎን እንዲከታተልና እንዲደግፍ ለአስተዳዳሪዎ (ጥበብን ላዘጋጀልዎ ሰው) ይጋራሉ። ማስታወሻዎችዎና ከአስጠኚው ጋር ያደረጓቸው ውይይቶች ፈጽሞ አይጋሩም።"),
+ "share_last": ("Last shared: %1$s", "ለመጨረሻ ጊዜ የተጋራው፦ %1$s"),
+ "share_never": ("Not shared yet (needs internet)", "ገና አልተጋራም (ኢንተርኔት ያስፈልጋል)"),
+ "share_notice_title": ("Your progress is shared", "እድገትዎ ይጋራል"),
+ "ok_understood": ("I understand", "ተረድቻለሁ"),
 }
 PLURALS = {
     "plan_cards": (("Review %d flashcard", "Review %d flashcards"), ("%d ፍላሽ ካርድ ይከልሱ", "%d ፍላሽ ካርዶችን ይከልሱ")),

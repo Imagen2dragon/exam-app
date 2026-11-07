@@ -57,6 +57,8 @@ Tests: `pip install pytest && python -m pytest -q` (Claude is mocked; no key nee
 python usage_report.py 7
 ```
 
+**Models:** exams, book reading, photo grading and the tutor chat use Claude Opus 5.5. Flashcards and revision notes use the much cheaper Claude Haiku 5.5 (about 40x cheaper per input token); if Haiku declines a request it is retried once on Opus. Change per task in `server/.env` (`MODEL_FLASHCARDS`, `MODEL_NOTES`, `MODEL_DEFAULT`).
+
 ## 2. Build the app
 Requires JDK 17+ and the Android SDK (platform 36).
 ```bash

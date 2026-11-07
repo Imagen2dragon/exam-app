@@ -1,7 +1,4 @@
 """Cost tracking and daily budgets, exercising the real ai.structured with a fake Anthropic client."""
-import json
-from types import SimpleNamespace
-
 import pytest
 from fastapi.testclient import TestClient
 
@@ -13,38 +10,6 @@ client = TestClient(server.app)
 TOKEN = "t" * 32
 AUTH = {"Authorization": "Bearer " + TOKEN}
 DEVICE = usage.device_id(TOKEN)
-
-
-class FakeStream:
-    """Stands in for client.beta.messages.stream(...): returns a canned final message."""
-    def __init__(self, reply: dict, stop="end_turn", **u):
-        self.reply, self.stop, self.u = reply, stop, u
-        self.requests = []
-
-    def __call__(self, **kwargs):
-        self.requests.append(kwargs)
-        return self
-
-    async def __aenter__(self):
-        return self
-
-    async def __aexit__(self, *a):
-        return False
-
-    async def get_final_message(self):
-        u = {"input_tokens": 1000, "output_tokens": 500, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0} | self.u
-        return SimpleNamespace(model="claude-opus-5-5", stop_reason=self.stop, usage=SimpleNamespace(**u),
-                               content=[SimpleNamespace(type="text", text=json.dumps(self.reply))])
-
-
-@pytest.fixture
-def fake_claude(monkeypatch):
-    def install(reply, **kw):
-        fake = FakeStream(reply, **kw)
-        monkeypatch.setattr(ai.client.beta.messages, "stream", fake)
-        return fake
-    server._hits.clear()
-    return install
 
 
 def test_cost_math():
@@ -60,24 +25,17 @@ def test_every_ai_call_is_recorded_against_a_hashed_device(fake_claude):
     r = client.post("/v1/flashcards", json={"subject": "Biology", "topic": "Cells", "grade": 10}, headers=AUTH)
     assert r.status_code == 200
     spent, n = usage.spent_today(DEVICE)
-    assert n == 1 and spent == pytest.approx((2000 * 4 + 1000 * 20 + 3000 * 0.2) / 1e6)
+    assert n == 1 and spent == pytest.approx((2000 * 0.10 + 1000 * 0.50 + 3000 * 0.01) / 1e6)   # flashcards run on Haiku 5.5
     row = usage._conn().execute("SELECT device, endpoint FROM usage").fetchone()
     assert row == (DEVICE, "/v1/flashcards") and TOKEN not in str(row)
 
 
 def test_parallel_mock_sections_are_all_attributed(fake_claude):
     blueprint = {"sections": [{"grade": 12, "unit": "U", "topics": "t", "count": 30}]}
-    fake = fake_claude(blueprint)
-    # one fake answers both shapes: blueprint first, then sections
     q = {"type": "mcq", "stem": "q", "options": ["a", "b", "c", "d"], "answer": "A", "numeric_answer": 0, "tolerance": 0,
          "unit": "", "explanation": "", "topic": "t", "difficulty": "standard", "marks": 1}
-    replies = iter([blueprint] + [{"title": "t", "minutes": 0, "questions": [q] * 25}, {"title": "t", "minutes": 0, "questions": [q] * 5}])
-    orig = fake.get_final_message
-
-    async def next_reply():
-        fake.reply = next(replies)
-        return await orig()
-    fake.get_final_message = next_reply
+    fake_claude(script=[(blueprint, "end_turn"), ({"title": "t", "minutes": 0, "questions": [q] * 25}, "end_turn"),
+                        ({"title": "t", "minutes": 0, "questions": [q] * 5}, "end_turn")])
     r = client.post("/v1/mock-paper", json={"subject": "Physics", "stream": "natural", "count": 30}, headers=AUTH)
     assert r.status_code == 200, r.text
     devices = usage._conn().execute("SELECT DISTINCT device FROM usage").fetchall()
@@ -103,7 +61,7 @@ def test_zero_budget_means_unlimited(monkeypatch):
 
 def test_refusal_is_recorded_and_mapped(fake_claude):
     fake_claude({}, stop="refusal")
-    r = client.post("/v1/notes", json={"subject": "History", "topic": "x", "grade": 12}, headers=AUTH)
+    r = client.post("/v1/exam", json={"subject": "History", "topic": "x", "grade": 12}, headers=AUTH)
     assert r.status_code == 422
     assert usage.spent_today(DEVICE)[1] == 1     # declined calls still count against the budget
 

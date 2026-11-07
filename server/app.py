@@ -118,7 +118,7 @@ async def notes(r: NotesReq, _: str = Depends(device)):
     lang = "Write in English." if r.language == "en" else "Write in Amharic, keep technical terms in English."
     prompt = (f"Make {styles[r.style]} for grade {r.grade} {r.subject}, topic: {r.topic}. {lang} "
               f"Use Markdown. Flag common exam traps.\n\nStudy material:\n{r.context_text()}")
-    return await ai.structured(prompt, NOTES_SCHEMA, effort="medium")
+    return await ai.structured(prompt, NOTES_SCHEMA, effort="medium", task="notes")
 
 
 @app.post("/v1/flashcards")
@@ -126,7 +126,7 @@ async def flashcards(r: FlashReq, _: str = Depends(device)):
     prompt = (f"Create {r.count} flashcards for grade {r.grade} {r.subject}, topic: {r.topic}. "
               "One fact, definition, formula or concept per card. Fronts are questions; backs are "
               f"short answers (max 40 words).\n\nStudy material:\n{r.context_text()}")
-    return await ai.structured(prompt, FLASH_SCHEMA, effort="low")
+    return await ai.structured(prompt, FLASH_SCHEMA, effort="low", task="flashcards")
 
 
 @app.post("/v1/exam")

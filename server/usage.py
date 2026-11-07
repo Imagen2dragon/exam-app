@@ -65,6 +65,8 @@ def today(ts: float | None = None) -> str:
 def cost(model: str, input_tokens: int, output_tokens: int, cache_write: int = 0, cache_read: int = 0,
          batch: bool = False) -> float:
     inp, out, read = PRICES.get(model, PRICES["claude-opus-5-5"])
+    if model == "claude-haiku-5-5" and input_tokens + cache_write + cache_read > 100_000:
+        inp, out, read = 0.50, 2.50, 0.05   # Haiku 5.5's long-prompt rate card
     usd = (input_tokens * inp + output_tokens * out + cache_write * inp * 1.25 + cache_read * read) / 1_000_000
     return usd * (0.5 if batch else 1.0)  # Message Batches are billed at 50%
 

@@ -5,6 +5,7 @@ import android.net.Uri
 import et.tibeb.examprep.R
 import et.tibeb.examprep.ui.subjectRes
 import et.tibeb.examprep.net.Api
+import et.tibeb.examprep.net.ApiException
 import et.tibeb.examprep.net.ApiQuestion
 import et.tibeb.examprep.net.ExamReq
 import et.tibeb.examprep.net.ExtractReq
@@ -17,7 +18,6 @@ import et.tibeb.examprep.util.MAX_UPLOAD_BYTES
 import et.tibeb.examprep.util.answersDir
 import et.tibeb.examprep.util.b64
 import et.tibeb.examprep.util.compressedJpeg
-import et.tibeb.examprep.util.readBytes
 import et.tibeb.examprep.util.sizeOf
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -67,24 +67,87 @@ class Repository(private val ctx: Context, private val db: AppDb, private val ap
 
     // ---------- Library ----------
 
-    suspend fun importDocument(uri: Uri, mime: String, title: String, subject: String, grade: Int, docType: String): Long {
+    // ---------- Library: uploads run in the background (WorkManager) ----------
+
+    private fun pendingDir(docId: Long) = File(ctx.filesDir, "pending/$docId")
+
+    /**
+     * Copies the picked file into app-private storage (the system's read permission on a picked
+     * file ends when the app closes) and queues the upload. Returns at once; ImportWorker does the rest.
+     */
+    suspend fun queueImport(uri: Uri, mime: String, title: String, subject: String, grade: Int, docType: String): Long {
         val isImage = mime.startsWith("image/")
-        val size = ctx.sizeOf(uri)
-        if (!isImage && size > MAX_UPLOAD_BYTES) error(s(R.string.err_too_big))
-        val bytes = if (isImage) ctx.compressedJpeg(uri, maxSide = 2000) else ctx.readBytes(uri)
-        val sendMime = if (isImage) "image/jpeg" else "application/pdf"
-        val doc = Document(title = title.take(200), subject = subject, grade = grade, docType = docType)
-        val id = dao.insert(doc)
+        if (!isImage && ctx.sizeOf(uri) > MAX_UPLOAD_BYTES) error(s(R.string.err_too_big))
+        val id = dao.insert(Document(title = title.take(200), subject = subject, grade = grade, docType = docType, status = "queued"))
         try {
-            val res = api.extract(ExtractReq(sendMime, bytes.b64(), subject, doc.title, docType, grade))
-            val chunks = res.chunks.map { Chunk(docId = id, subject = subject, grade = grade, unit = it.unit, topic = it.topic, text = it.text) }
-            val qs = res.questions.map { it.toEntity(subject, grade, "past", id) }
-            dao.replaceDocumentContent(doc.copy(id = id, status = "ready", summary = res.summary), chunks, qs)
+            val dir = pendingDir(id).apply { mkdirs() }
+            if (isImage) File(dir, "page_001.jpg").writeBytes(ctx.compressedJpeg(uri, maxSide = 2000))
+            else File(dir, "book.pdf").outputStream().use { out -> ctx.contentResolver.openInputStream(uri)!!.use { it.copyTo(out) } }
         } catch (e: Exception) {
-            dao.update(doc.copy(id = id, status = "failed", error = friendly(e)))
+            pendingDir(id).deleteRecursively(); dao.deleteDocumentFully(id)
             throw e
         }
+        ImportWorker.enqueue(ctx, id)
         return id
+    }
+
+    /** Called by ImportWorker. Sends the queued file to the AI and stores the extracted text. */
+    suspend fun processImport(docId: Long, giveUp: Boolean): ImportOutcome {
+        val doc = dao.document(docId) ?: return ImportOutcome.FAILED
+        val files = pendingDir(docId).listFiles()?.sortedBy { it.name }.orEmpty()
+        if (files.isEmpty()) {
+            dao.update(doc.copy(status = "failed", error = s(R.string.err_generic)))
+            return ImportOutcome.FAILED
+        }
+        dao.update(doc.copy(status = "processing", error = ""))
+        val file = files.first()
+        val mime = if (file.extension == "pdf") "application/pdf" else "image/jpeg"
+        return try {
+            val res = api.extract(ExtractReq(mime, file.readBytes().b64(), doc.subject, doc.title, doc.docType, doc.grade))
+            val chunks = res.chunks.map { Chunk(docId = docId, subject = doc.subject, grade = doc.grade, unit = it.unit, topic = it.topic, text = it.text) }
+            val qs = res.questions.map { it.toEntity(doc.subject, doc.grade, "past", docId) }
+            dao.replaceDocumentContent(doc.copy(status = "ready", summary = res.summary, error = ""), chunks, qs)
+            pendingDir(docId).deleteRecursively()  // only the extracted text is kept
+            ImportOutcome.DONE
+        } catch (e: ApiException) {
+            if (e.retryable && !giveUp) {
+                dao.update(doc.copy(status = "queued", error = friendly(e)))
+                ImportOutcome.RETRY
+            } else {
+                // Keep the pending file so the student can tap Retry after fixing the problem.
+                dao.update(doc.copy(status = "failed", error = friendly(e)))
+                ImportOutcome.FAILED
+            }
+        }
+    }
+
+    fun retryImport(docId: Long) {
+        scope.launch {
+            val doc = dao.document(docId) ?: return@launch
+            dao.update(doc.copy(status = "queued", error = ""))
+            ImportWorker.enqueue(ctx, docId)
+        }
+    }
+
+    suspend fun deleteDocument(docId: Long) {
+        ImportWorker.cancel(ctx, docId)
+        pendingDir(docId).deleteRecursively()
+        dao.deleteDocumentFully(docId)
+    }
+
+    private val startedAt = System.currentTimeMillis()
+
+    /**
+     * Books that were mid-upload when an older version closed have no queued file: mark them failed.
+     * Only books added before this start are checked, so an upload being queued right now is never touched.
+     */
+    private suspend fun recoverStuckImports() {
+        dao.documentsNow().filter { it.addedAt < startedAt && it.status in setOf("queued", "processing") && pendingDir(it.id).listFiles().isNullOrEmpty() }
+            .forEach { dao.update(it.copy(status = "failed", error = s(R.string.lib_interrupted))) }
+    }
+
+    init {
+        scope.launch { runCatching { recoverStuckImports() } }
     }
 
     /** Finds the most relevant stored pages for a topic, fully on-device. */

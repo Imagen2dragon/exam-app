@@ -51,7 +51,11 @@ S = {
 
  "lib_intro": ("Upload textbooks, past national exams and tests. Tibeb reads them once, keeps only the text, and studies from them offline.",
                "የመማሪያ መጻሕፍትን፣ ያለፉ ብሔራዊ ፈተናዎችንና ሙከራዎችን ይጫኑ። ጥበብ አንድ ጊዜ አንብቦ ጽሑፉን ብቻ ያስቀምጣል፤ ከዚያም ያለ ኢንተርኔት ያስጠናዎታል።"),
- "lib_reading": ("Reading “%1$s”… big books can take a few minutes", "“%1$s” በማንበብ ላይ… ትልልቅ መጻሕፍት ጥቂት ደቂቃዎች ሊወስዱ ይችላሉ"),
+ "lib_queued": ("Waiting to upload. It continues by itself when you're online, even if you close the app.", "ለመጫን በመጠባበቅ ላይ። መተግበሪያውን ቢዘጉትም ኢንተርኔት ሲገኝ በራሱ ይቀጥላል።"),
+ "lib_reading_now": ("Reading… big books take a few minutes. You can close the app.", "በማንበብ ላይ… ትልልቅ መጻሕፍት ጥቂት ደቂቃዎች ይወስዳሉ። መተግበሪያውን መዝጋት ይችላሉ።"),
+ "lib_retry": ("Retry", "እንደገና ሞክር"),
+ "lib_interrupted": ("Upload was interrupted. Delete and upload again.", "መጫኑ ተቋርጧል። አጥፍተው እንደገና ይጫኑ።"),
+ "lib_last_error": ("Last try: %1$s", "የመጨረሻው ሙከራ፦ %1$s"),
  "lib_empty_title": ("Nothing here yet", "እስካሁን ምንም የለም"),
  "lib_empty_body": ("Tap Upload to add your first textbook or past exam (PDF or photo).",
                     "የመጀመሪያ መጽሐፍዎን ወይም ያለፈ ፈተናዎን (PDF ወይም ፎቶ) ለመጨመር «ጫን»ን ይንኩ።"),

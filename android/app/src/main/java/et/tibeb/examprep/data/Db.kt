@@ -20,6 +20,7 @@ interface StudyDao {
     @Insert suspend fun insert(d: Document): Long
     @Update suspend fun update(d: Document)
     @Query("SELECT * FROM Document WHERE id = :id") suspend fun document(id: Long): Document?
+    @Query("SELECT * FROM Document") suspend fun documentsNow(): List<Document>
     @Query("DELETE FROM Document WHERE id = :id") suspend fun deleteDocument(id: Long)
     @Query("DELETE FROM Chunk WHERE docId = :id") suspend fun deleteChunks(id: Long)
     @Query("DELETE FROM Question WHERE docId = :id AND source = 'past'") suspend fun deletePastQuestions(id: Long)

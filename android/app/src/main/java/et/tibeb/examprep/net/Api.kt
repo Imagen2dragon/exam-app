@@ -24,6 +24,12 @@ import java.net.URL
 @Serializable data class FlashRes(val cards: List<ApiCard>)
 @Serializable data class ExamRes(val title: String, val minutes: Int, val questions: List<ApiQuestion>)
 @Serializable data class UsageRes(val today_usd: Double, val budget_usd: Double, val requests_today: Int)
+@Serializable data class PackReq(
+    val subject: String, val count: Int, val topics: List<String>, val context: List<String>,
+    val past_questions: List<String>, val weak_topics: List<String>,
+)
+@Serializable data class PackCreated(val pack_id: String, val status: String, val sections: Int = 0)
+@Serializable data class PackRes(val pack_id: String, val subject: String = "", val status: String, val questions: List<ApiQuestion> = emptyList())
 @Serializable data class GradeRes(val score: Double, val verdict: String, val feedback: String, val mistakes: List<String> = emptyList())
 
 @Serializable data class PageReq(val mime: String, val data_b64: String)
@@ -70,6 +76,8 @@ open class Api(private val baseUrl: () -> String, private val token: () -> Strin
     suspend fun exam(r: ExamReq): ExamRes = post("/v1/exam", json.encodeToString(r), 600)
     suspend fun mockPaper(r: MockPaperReq): ExamRes = post("/v1/mock-paper", json.encodeToString(r), 900)
     open suspend fun explain(r: ExplainReq): ExplainRes = post("/v1/explain", json.encodeToString(r), 120)
+    suspend fun orderPack(r: PackReq): PackCreated = post("/v1/packs", json.encodeToString(r), 120)
+    open suspend fun pack(id: String): PackRes = get("/v1/packs/" + java.net.URLEncoder.encode(id, "UTF-8"), 300)
     suspend fun grade(r: GradeReq): GradeRes = post("/v1/grade", json.encodeToString(r), 240)
 
     /** Today's estimated AI spend for this device; null when offline or not configured. */
@@ -123,6 +131,23 @@ open class Api(private val baseUrl: () -> String, private val token: () -> Strin
                 c.disconnect()
             }
         }
+
+    private suspend inline fun <reified T> get(path: String, readSeconds: Int): T = withContext(Dispatchers.IO) {
+        if (token().isNullOrBlank()) throw ApiException(s(R.string.err_need_token))
+        val c = open(path, readSeconds)
+        try {
+            val code = c.responseCode
+            val text = (if (code in 200..299) c.inputStream else c.errorStream)?.bufferedReader()?.use { it.readText() } ?: ""
+            if (code !in 200..299) throw ApiException(errorMessage(code, text), retryable = code == 408 || code == 429 || code >= 500)
+            json.decodeFromString<T>(text)
+        } catch (e: SocketTimeoutException) {
+            throw ApiException(s(R.string.err_timeout), retryable = true)
+        } catch (e: IOException) {
+            throw ApiException(s(R.string.err_offline), retryable = true)
+        } finally {
+            c.disconnect()
+        }
+    }
 
     private fun errorMessage(code: Int, body: String): String {
         // Known statuses get a translated message; the server's English detail is the fallback.

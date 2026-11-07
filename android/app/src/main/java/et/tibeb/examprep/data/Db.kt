@@ -39,9 +39,10 @@ interface StudyDao {
 
     // Question bank
     @Insert suspend fun insertQuestions(q: List<Question>): List<Long>
-    @Query("SELECT COUNT(*) FROM Question WHERE subject = :subject AND source = 'past'")
+    // The offline bank = questions from uploaded past papers + downloaded question packs.
+    @Query("SELECT COUNT(*) FROM Question WHERE subject = :subject AND source IN ('past', 'pack')")
     fun pastCount(subject: String): Flow<Int>
-    @Query("""SELECT * FROM Question WHERE subject = :subject AND source = 'past' AND type IN (:types)
+    @Query("""SELECT * FROM Question WHERE subject = :subject AND source IN ('past', 'pack') AND type IN (:types)
               ORDER BY RANDOM() LIMIT :limit""")
     suspend fun randomPast(subject: String, types: List<String>, limit: Int): List<Question>
 
@@ -82,6 +83,12 @@ interface StudyDao {
     @Query("SELECT * FROM Exam WHERE mockId IS NULL ORDER BY createdAt DESC") fun exams(): Flow<List<Exam>>
     @Query("SELECT * FROM Exam ORDER BY createdAt DESC") fun allExams(): Flow<List<Exam>>
 
+    // Question packs
+    @Insert suspend fun insert(p: Pack): Long
+    @Update suspend fun update(p: Pack)
+    @Query("SELECT * FROM Pack ORDER BY createdAt DESC") fun packs(): Flow<List<Pack>>
+    @Query("SELECT * FROM Pack WHERE id = :id") suspend fun pack(id: Long): Pack?
+
     // National mocks
     @Insert suspend fun insert(m: Mock): Long
     @Query("SELECT * FROM Mock ORDER BY createdAt DESC") fun mocks(): Flow<List<Mock>>
@@ -118,8 +125,8 @@ interface StudyDao {
 
 @Database(
     entities = [Document::class, Chunk::class, ChunkFts::class, Question::class, Note::class,
-        Card::class, Exam::class, ExamItem::class, Mock::class],
-    version = 3,
+        Card::class, Exam::class, ExamItem::class, Mock::class, Pack::class],
+    version = 4,
     exportSchema = true,
 )
 abstract class AppDb : RoomDatabase() {
@@ -127,7 +134,14 @@ abstract class AppDb : RoomDatabase() {
 
     companion object {
         fun create(ctx: Context): AppDb =
-            Room.databaseBuilder(ctx, AppDb::class.java, "tibeb.db").addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
+            Room.databaseBuilder(ctx, AppDb::class.java, "tibeb.db").addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build()
+
+        /** v0.6 -> v0.7: overnight question packs. */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS `Pack` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `serverId` TEXT NOT NULL, `subject` TEXT NOT NULL, `count` INTEGER NOT NULL, `topics` TEXT NOT NULL, `status` TEXT NOT NULL, `received` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `error` TEXT NOT NULL)")
+            }
+        }
 
         /** v0.5 -> v0.6: mistake notebook links auto-made flashcards to their question. */
         val MIGRATION_2_3 = object : Migration(2, 3) {

@@ -79,6 +79,19 @@ class MockPaperReq(BaseModel):
         return "\n\n---\n\n".join(parts) if parts else "(no uploaded material - use the Ethiopian curriculum)"
 
 
+class PackReq(BaseModel):
+    subject: Subject
+    count: int = Field(ge=20, le=200)
+    topics: list[str] = Field(default_factory=list, max_length=12)
+    context: list[str] = Field(default_factory=list, max_length=24)
+    past_questions: list[str] = Field(default_factory=list, max_length=30)
+    weak_topics: list[str] = Field(default_factory=list, max_length=10)
+
+    def context_text(self) -> str:
+        parts = [c[:MAX_CHUNK] for c in self.context]
+        return "\n\n---\n\n".join(parts) if parts else "(no uploaded material - use the Ethiopian curriculum)"
+
+
 class GradeReq(BaseModel):
     subject: Subject
     question: str = Field(max_length=4_000)

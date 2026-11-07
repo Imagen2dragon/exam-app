@@ -12,6 +12,7 @@ import et.tibeb.examprep.net.ExtractReq
 import et.tibeb.examprep.net.FlashReq
 import et.tibeb.examprep.net.GradeReq
 import et.tibeb.examprep.net.MockPaperReq
+import et.tibeb.examprep.net.PackReq
 import et.tibeb.examprep.net.ChatTurnReq
 import et.tibeb.examprep.net.ExplainReq
 import et.tibeb.examprep.net.PageReq
@@ -344,6 +345,42 @@ class Repository(private val ctx: Context, private val db: AppDb, private val ap
             dao.latestResponse(questionId).orEmpty(), language,
             history.map { ChatTurnReq(if (it.fromStudent) "user" else "assistant", it.text.take(2000)) })).reply
     }
+
+    // ---------- Overnight question packs (half price, collected in the background) ----------
+
+    suspend fun orderPack(subject: String, count: Int, topics: List<String>): Long {
+        val ctxChunks = context(subject, topics.joinToString(" "), 16).ifEmpty { context(subject, "", 16) }
+        val past = dao.randomPast(subject, listOf("mcq"), 12).map { it.stem }
+        val res = api.orderPack(PackReq(subject, count, topics, ctxChunks, past, weakTopics(subject)))
+        val id = dao.insert(Pack(serverId = res.pack_id, subject = subject, count = count, topics = topics.joinToString(", ")))
+        PackWorker.enqueue(ctx, id)
+        return id
+    }
+
+    /** Called by PackWorker (or "Check now"). Imports a finished pack into the offline question bank. */
+    suspend fun collectPack(id: Long): PackOutcome {
+        val pack = dao.pack(id) ?: return PackOutcome.FAILED
+        if (pack.status != "processing") return PackOutcome.DONE
+        if (System.currentTimeMillis() - pack.createdAt > 48L * 60 * 60 * 1000) {
+            dao.update(pack.copy(status = "failed", error = s(R.string.pack_expired))); return PackOutcome.FAILED
+        }
+        val res = try { api.pack(pack.serverId) } catch (e: ApiException) {
+            if (e.retryable) return PackOutcome.WAIT
+            dao.update(pack.copy(status = "failed", error = friendly(e))); return PackOutcome.FAILED
+        }
+        return when (res.status) {
+            "processing" -> PackOutcome.WAIT
+            "ready" -> {
+                val qs = res.questions.map { it.toEntity(pack.subject, 12, "pack", null) }
+                dao.insertQuestions(qs)
+                dao.update(pack.copy(status = "imported", received = qs.size, error = ""))
+                PackOutcome.DONE
+            }
+            else -> { dao.update(pack.copy(status = "failed", error = s(R.string.pack_failed))); PackOutcome.FAILED }
+        }
+    }
+
+    fun checkPackNow(id: Long) = PackWorker.enqueue(ctx, id, delayMinutes = 0)
 
     // ---------- Mistake notebook ----------
 

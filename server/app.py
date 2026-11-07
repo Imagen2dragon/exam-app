@@ -14,10 +14,11 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 import ai
+import packs
 import usage
 from schemas import (BLUEPRINT_SCHEMA, EXAM_SCHEMA, EXPLAIN_SCHEMA, EXTRACT_SCHEMA, FLASH_SCHEMA,
                      GRADE_SCHEMA, NOTES_SCHEMA, ExamReq, ExplainReq, ExtractReq, FlashReq, GradeReq,
-                     MockPaperReq, NotesReq)
+                     MockPaperReq, NotesReq, PackReq)
 
 TOKENS = [t.strip() for t in os.environ.get("DEVICE_TOKENS", "").split(",") if len(t.strip()) >= 24]
 RATE = int(os.environ.get("RATE_LIMIT_PER_MIN", "8"))
@@ -240,6 +241,41 @@ async def mock_paper(r: MockPaperReq, _: str = Depends(device)):
     if len(questions) < r.count * 0.8:
         raise ai.AIError(502, "The paper came back incomplete. Please try again.")
     return {"title": f"{r.subject} – national mock paper", "minutes": 0, "questions": questions}
+
+
+packs.BATCH_SCHEMA = EXAM_SCHEMA
+
+
+@app.post("/v1/packs")
+async def create_pack(r: PackReq, token: str = Depends(device)):
+    """Queue an overnight question pack (Message Batches API: half price, ready within ~1-24 h)."""
+    past = "\n".join(f"- {q[:600]}" for q in r.past_questions) or "(none provided)"
+    weak = ", ".join(r.weak_topics) or "none recorded"
+    shared = ai.cached(
+        f"You are writing part of a large practice question bank for an Ethiopian Grade 12 student preparing "
+        f"for the national exam in {r.subject} (new curriculum, grades 9-12). Write national-exam-style "
+        "multiple-choice questions: 4 options, one correct answer letter A-D, distractors built from typical "
+        "mistakes, a mix of easy, medium and hard items, each with a short step-by-step explanation. Use type "
+        "'mcq', marks 1, numeric_answer 0, tolerance 0, unit ''. Spread the answer letters evenly and never "
+        "repeat a question.\n"
+        f"The student is weak at: {weak} - weight those where they fit.\n"
+        f"Past exam questions for style reference (do NOT copy):\n{past}\n\nStudy material:\n{r.context_text()}")
+    try:
+        return await packs.create(usage.device_id(token), r.subject, r.count, r.topics, shared)
+    except ai.anthropic.APIError as e:
+        raise ai.AIError(502, "Could not queue the question pack. Try again later.") from e
+
+
+@app.get("/v1/packs/{pack_id}")
+async def get_pack(pack_id: str, token: str = Depends(authenticated)):
+    """Pack status; the questions once ready. Only the device that ordered a pack can read it."""
+    try:
+        out = await packs.collect(usage.device_id(token), pack_id[:40])
+    except ai.anthropic.APIError as e:
+        raise ai.AIError(502, "Could not check the question pack. Try again later.") from e
+    if out is None:
+        raise HTTPException(404, "Pack not found")
+    return out
 
 
 @app.post("/v1/explain")

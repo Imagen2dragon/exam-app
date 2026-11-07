@@ -39,6 +39,7 @@ import et.tibeb.examprep.ui.screens.ExamSetupScreen
 import et.tibeb.examprep.ui.screens.ExamsScreen
 import et.tibeb.examprep.ui.screens.HomeScreen
 import et.tibeb.examprep.ui.screens.LibraryScreen
+import et.tibeb.examprep.ui.screens.PacksScreen
 import et.tibeb.examprep.ui.screens.ExplainScreen
 import et.tibeb.examprep.ui.screens.MasteryScreen
 import et.tibeb.examprep.ui.screens.MistakesScreen
@@ -108,6 +109,7 @@ private fun AppNav(onNav: (NavHostController) -> Unit) {
             composable("review") { ReviewScreen(nav) }
             composable("mistakes") { MistakesScreen(nav) }
             composable("mastery") { MasteryScreen(nav) }
+            composable("packs") { PacksScreen(nav) }
             composable("explain/{qid}", listOf(navArgument("qid") { type = NavType.LongType })) {
                 ExplainScreen(nav, it.arguments!!.getLong("qid"))
             }

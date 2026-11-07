@@ -36,4 +36,13 @@ class MigrationTest {
             c.moveToFirst(); assertEquals("f", c.getString(0)); assertEquals(3, c.getInt(1)); assertEquals(true, c.isNull(2))
         }
     }
+
+    @Test fun migrate3To4AddsPacksAndKeepsData() {
+        helper.createDatabase("m4.db", 3).use {
+            it.execSQL("INSERT INTO Card (id, subject, topic, front, back, ease, intervalDays, reps, due, questionId) VALUES (1, 'Biology', 'Cells', 'f', 'b', 2.5, 3, 2, 0, NULL)")
+        }
+        val db = helper.runMigrationsAndValidate("m4.db", 4, true, AppDb.MIGRATION_3_4)
+        db.query("SELECT COUNT(*) FROM Card").use { c -> c.moveToFirst(); assertEquals(1, c.getInt(0)) }
+        db.execSQL("INSERT INTO Pack (serverId, subject, count, topics, status, received, createdAt, error) VALUES ('x', 'Physics', 50, '', 'processing', 0, 0, '')")
+    }
 }

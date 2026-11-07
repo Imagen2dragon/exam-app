@@ -204,23 +204,38 @@ async def mock_paper(r: MockPaperReq, _: str = Depends(device)):
     weak = ", ".join(r.weak_topics) or "none recorded"
     sem = asyncio.Semaphore(4)
 
-    async def write(sec: dict) -> list[dict]:
+    # Everything the sections share comes first and ends in a cache breakpoint; only the short
+    # section brief differs. The first section is sent alone; once it starts streaming its prefix is
+    # cached, and the other sections read it (~5% of the input price) instead of paying in full.
+    shared = ai.cached(
+        f"You are writing one section of an original Ethiopian Grade 12 national exam paper in {r.subject}. "
+        "Match the real national exam: 4 options, one correct answer letter A-D, distractors built from "
+        "typical mistakes, a realistic mix of easy, medium and hard items, each answerable in about a minute "
+        "without a calculator unless the subject needs arithmetic. Every question has a short step-by-step "
+        "explanation. Use type 'mcq', marks 1, numeric_answer 0, tolerance 0, unit ''. Spread the answer "
+        "letters evenly.\n"
+        f"The student is weak at: {weak} - include a few on these if they fit the section.\n"
+        f"Past exam questions for style reference (do NOT copy):\n{past}\n\n"
+        f"Study material:\n{r.context_text()}")
+    first_started = asyncio.Event()
+
+    async def write(i: int, sec: dict) -> list[dict]:
+        if i > 0:
+            await first_started.wait()
         async with sem:
-            out = await ai.structured(
-                f"Write exactly {sec['count']} original multiple-choice questions for an Ethiopian Grade 12 "
-                f"national exam paper in {r.subject}. Section: grade {sec['grade']}, {sec['unit']}. "
-                f"Subtopics: {sec['topics']}. Match the real national exam: 4 options, one correct answer "
-                "letter A-D, distractors built from typical mistakes, a realistic mix of easy, medium and "
-                "hard items, each answerable in about a minute without a calculator unless the subject "
-                "needs arithmetic. Every question has a short step-by-step explanation. Use type 'mcq', "
-                "marks 1, numeric_answer 0, tolerance 0, unit ''. Spread the answer letters evenly.\n"
-                f"The student is weak at: {weak} - include a few on these if they fit this section.\n"
-                f"Past exam questions for style reference (do NOT copy):\n{past}\n\n"
-                f"Study material:\n{r.context_text()}",
-                EXAM_SCHEMA, effort="medium", max_tokens=32_000)
+            brief = (f"Write exactly {sec['count']} questions for this section: grade {sec['grade']}, "
+                     f"{sec['unit']}. Subtopics: {sec['topics']}.")
+            out = await ai.structured([shared, {"type": "text", "text": brief}], EXAM_SCHEMA, effort="medium",
+                                      max_tokens=32_000, started=first_started if i == 0 else None)
             return [q for q in out["questions"] if q.get("type") == "mcq" and len(q.get("options", [])) == 4][: sec["count"]]
 
-    parts = await asyncio.gather(*(write(s) for s in sections))
+    async def guarded(i: int, sec: dict) -> list[dict]:
+        try:
+            return await write(i, sec)
+        finally:
+            first_started.set()  # never leave the other sections waiting if the first one fails
+
+    parts = await asyncio.gather(*(guarded(i, s) for i, s in enumerate(sections)))
     questions = [q for part in parts for q in part]
     if len(questions) < r.count * 0.8:
         raise ai.AIError(502, "The paper came back incomplete. Please try again.")
@@ -245,6 +260,8 @@ async def explain(r: ExplainReq, _: str = Depends(device)):
     )
     messages = [{"role": t.role, "content": t.text} for t in r.turns]
     messages[0] = {"role": "user", "content": context + r.turns[0].text}
+    # Cache the conversation so far: the next turn re-reads it from the cache instead of paying again.
+    messages[-1] = {"role": "user", "content": [ai.cached(messages[-1]["content"])]}
     return await ai.structured(None, EXPLAIN_SCHEMA, effort="medium", max_tokens=8_000, messages=messages)
 
 

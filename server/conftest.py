@@ -40,6 +40,12 @@ class FakeStream:
     async def __aexit__(self, *a):
         return False
 
+    def __aiter__(self):
+        async def events():
+            self.events_seen = getattr(self, "events_seen", 0) + 1
+            yield SimpleNamespace(type="message_start")
+        return events()
+
     async def get_final_message(self):
         reply, stop = self.script.pop(0) if len(self.script) > 1 else self.script[0]
         u = {"input_tokens": 1000, "output_tokens": 500, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0} | self.u

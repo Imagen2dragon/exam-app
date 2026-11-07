@@ -154,7 +154,7 @@ def test_explain_multi_turn_with_context_in_first_turn():
     assert [m["role"] for m in msgs] == ["user", "assistant", "user"]
     assert "Correct answer: C" in msgs[0]["content"] and "C. 6" in msgs[0]["content"]
     assert "The student answered: B" in msgs[0]["content"] and msgs[0]["content"].endswith("Why not 3?")
-    assert "Amharic" in msgs[0]["content"] and msgs[2]["content"] == "Factor how?"
+    assert "Amharic" in msgs[0]["content"] and msgs[2]["content"][0]["text"] == "Factor how?"
 
 
 def test_explain_rejects_bad_turn_order_and_size():

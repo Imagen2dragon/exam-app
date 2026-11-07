@@ -1,4 +1,5 @@
 """All Claude calls live here. The API key is read from the server environment only."""
+import asyncio
 import json
 import os
 
@@ -47,15 +48,28 @@ class AIError(Exception):
         self.message = message
 
 
+CACHE = {"type": "ephemeral"}  # 5-minute prompt cache: reads cost 5% of input on Opus 5.5, writes 125%
+# The fixed system prompt is a cache breakpoint, so requests of the same kind share it.
+SYSTEM_BLOCKS = [{"type": "text", "text": SYSTEM, "cache_control": CACHE}]
+
+
+def cached(text: str) -> dict:
+    """A text block that ends a shared prefix: identical earlier requests' work is read from cache."""
+    return {"type": "text", "text": text, "cache_control": CACHE}
+
+
 async def structured(content: list[dict] | str, schema: dict, *, effort: str = "high",
-                     max_tokens: int = 32_000, messages: list[dict] | None = None, task: str = "default") -> dict:
+                     max_tokens: int = 32_000, messages: list[dict] | None = None, task: str = "default",
+                     started: asyncio.Event | None = None) -> dict:
     """One structured-output call. Streams so long outputs never hit HTTP timeouts.
-    Pass `messages` (alternating user/assistant, ending with user) for a multi-turn chat instead of `content`."""
+    Pass `messages` (alternating user/assistant, ending with user) for a multi-turn chat instead of `content`.
+    `started` is set as soon as the response begins streaming - from then on its prompt prefix is readable
+    from the cache, which lets callers fan out parallel requests that share it."""
     model = model_for(task)
     request = dict(
         model=model,
         max_tokens=max_tokens,
-        system=SYSTEM,
+        system=SYSTEM_BLOCKS,
         messages=messages or [{"role": "user", "content": content}],
         thinking={"type": "adaptive"},
         output_config={"effort": effort, "format": {"type": "json_schema", "schema": schema}},
@@ -64,6 +78,9 @@ async def structured(content: list[dict] | str, schema: dict, *, effort: str = "
         request |= {"betas": [FALLBACK_BETA], "fallbacks": "default"}
     try:
         async with client.beta.messages.stream(**request) as stream:
+            async for _ in stream:
+                if started is not None and not started.is_set():
+                    started.set()
             msg = await stream.get_final_message()
         usage.record_message(msg)  # cost tracking + per-device daily budget
     except anthropic.RateLimitError as e:
@@ -79,7 +96,7 @@ async def structured(content: list[dict] | str, schema: dict, *, effort: str = "
 
     if msg.stop_reason == "refusal" and model != MODEL:
         # A cheaper model declined: retry once on the default model (which has server-side fallback).
-        return await structured(content, schema, effort=effort, max_tokens=max_tokens, messages=messages)
+        return await structured(content, schema, effort=effort, max_tokens=max_tokens, messages=messages, started=started)
     if msg.stop_reason == "refusal":
         raise AIError(422, "The AI declined this request. Try rephrasing or a different document.")
     if msg.stop_reason == "max_tokens":

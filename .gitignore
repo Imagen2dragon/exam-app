@@ -7,3 +7,7 @@ local.properties
 __pycache__/
 .venv/
 .pytest_cache/
+*.db
+*.db-wal
+*.db-shm
+deploy/backups/

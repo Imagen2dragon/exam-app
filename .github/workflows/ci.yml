@@ -61,3 +61,21 @@ jobs:
         working-directory: admin
         run: ./gradlew.bat --no-daemon packageMsi
 
+
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Server image builds and answers its health check
+        run: |
+          docker build -t tibeb-api server
+          docker run -d --name api --read-only --tmpfs /tmp --cap-drop ALL -p 127.0.0.1:8080:8080 \
+            -e ANTHROPIC_API_KEY=unused -e DEVICE_TOKENS="$(openssl rand -hex 24)" tibeb-api
+          for i in $(seq 30); do curl -fsS 127.0.0.1:8080/healthz && exit 0; sleep 1; done
+          docker logs api; exit 1
+      - name: Caddyfile and compose file are valid
+        working-directory: deploy
+        run: |
+          docker run --rm -e TIBEB_DOMAIN=tibeb.example.com -v "$PWD/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            caddy:2.10-alpine caddy validate --config /etc/caddy/Caddyfile
+          touch ../server/.env && TIBEB_DOMAIN=tibeb.example.com docker compose config -q

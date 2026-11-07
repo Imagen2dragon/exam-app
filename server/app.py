@@ -2,7 +2,7 @@
 
 Why a backend: an API key inside an APK can be extracted by anyone who has the APK.
 Here the key stays on the server; each phone gets its own revocable device token.
-Run:  uvicorn app:app --host 0.0.0.0 --port 8080   (put HTTPS in front, e.g. Caddy)
+Run:  see docs/DEPLOY.md (Docker + Caddy for HTTPS), or locally: uvicorn app:app --port 8080
 """
 import asyncio
 import hmac

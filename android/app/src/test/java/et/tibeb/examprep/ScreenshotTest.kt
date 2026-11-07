@@ -1,0 +1,78 @@
+package et.tibeb.examprep
+
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
+import com.github.takahirom.roborazzi.captureRoboImage
+import et.tibeb.examprep.data.Card
+import et.tibeb.examprep.data.Chunk
+import et.tibeb.examprep.data.Document
+import et.tibeb.examprep.data.Exam
+import et.tibeb.examprep.data.ExamItem
+import et.tibeb.examprep.data.Note
+import et.tibeb.examprep.data.Question
+import kotlinx.coroutines.runBlocking
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
+
+/** Renders the real app (real Room DB, real screens) with sample data and saves PNGs. */
+@RunWith(RobolectricTestRunner::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(sdk = [35], qualifiers = "w393dp-h852dp-xxhdpi")
+class ScreenshotTest {
+    @get:Rule val rule = createAndroidComposeRule<MainActivity>()
+
+    private fun shot(name: String) { rule.waitForIdle(); rule.onRoot().captureRoboImage("../../docs/screenshots/$name.png") }
+
+    private fun seed(): Long = runBlocking {
+        val app = rule.activity.application as TibebApp
+        app.prefs.save(app.prefs.settings.value.copy(serverUrl = "https://tibeb.example.com"))
+        val dao = app.repo.dao
+        val doc = dao.insert(Document(title = "Grade 12 Mathematics Student Textbook – Unit 3", subject = "Mathematics", grade = 12,
+            docType = "textbook", status = "ready", summary = "Introduction to limits and continuity: limits of sequences, limits of functions, continuity and the intermediate value theorem."))
+        dao.insert(Document(title = "ESSLCE Physics 2016 E.C.", subject = "Physics", grade = 12, docType = "past_exam", status = "ready",
+            summary = "Past national exam paper, 60 multiple-choice questions with answers."))
+        dao.insertChunks(List(42) { Chunk(docId = doc, subject = "Mathematics", grade = 12, unit = "Unit 3", topic = "Limits", text = "…") })
+        dao.insert(Note(subject = "Physics", topic = "Projectile motion", title = "Projectile motion – revision notes",
+            markdown = "# Projectile motion\n## Key ideas\n- Horizontal velocity is **constant**: `vx = v0 cos θ`\n- Vertical motion has acceleration **g = 9.8 m/s²** downward\n## Exam traps\n- Time of flight depends only on the **vertical** component\n- At the top, speed is **not zero** – only vy is zero"))
+        dao.insertCards(listOf(Card(subject = "Chemistry", topic = "Equilibrium", front = "What does Le Chatelier's principle state?",
+            back = "A system at equilibrium shifts to oppose any change in concentration, temperature or pressure.", due = 0)))
+        val qs = dao.insertQuestions(listOf(
+            Question(subject = "Mathematics", grade = 12, topic = "Limits", type = "mcq",
+                stem = "What is the limit of (x² − 9)/(x − 3) as x approaches 3?", optionsJson = "[\"0\",\"3\",\"6\",\"Does not exist\"]",
+                answer = "C", explanation = "Factor: (x−3)(x+3)/(x−3) = x+3 → 6.", difficulty = "hard", marks = 1, source = "ai"),
+            Question(subject = "Mathematics", grade = 12, topic = "Functions", type = "graph",
+                stem = "Sketch y = 1/(x − 2) + 1. Show both asymptotes and intercepts.", optionsJson = "[]",
+                answer = "Vertical asymptote x=2, horizontal y=1, x-intercept (1,0), y-intercept (0, 1/2).", explanation = "", difficulty = "hard", marks = 4, source = "ai"),
+            Question(subject = "Mathematics", grade = 12, topic = "Derivatives", type = "numeric",
+                stem = "f(x) = 3x³ − 2x. Find f′(2).", optionsJson = "[]", answer = "34", numericAnswer = 34.0, explanation = "f′(x)=9x²−2 → 36−2=34.",
+                difficulty = "standard", marks = 2, source = "ai"),
+        ))
+        val exam = dao.insert(Exam(title = "Calculus – hard practice", subject = "Mathematics", minutes = 25, maxScore = 7.0))
+        dao.insertItems(qs.mapIndexed { i, q -> ExamItem(examId = exam, idx = i, questionId = q, response = if (i == 0) "C" else "") })
+        val done = dao.insert(Exam(title = "Physics mock – Mechanics", subject = "Physics", minutes = 30, maxScore = 7.0,
+            startedAt = 1, finishedAt = System.currentTimeMillis(), score = 5.0))
+        dao.insertItems(qs.mapIndexed { i, q -> ExamItem(examId = done, idx = i, questionId = q, response = listOf("C", "", "30")[i],
+            earned = listOf(1.0, 4.0, 0.0)[i], graded = true,
+            feedback = listOf("", "Both asymptotes and intercepts are correct and labelled.", "")[i]) })
+        exam
+    }
+
+    @Test fun screens() {
+        val examId = seed()
+        shot("01_home")
+        rule.onNodeWithText("Library").performClick(); shot("02_library")
+        rule.onNodeWithText("Study").performClick(); shot("03_study")
+        rule.onNodeWithText("Exams").performClick(); shot("04_exams")
+        rule.runOnUiThread { rule.activity.navForTest?.navigate("newexam?subject=Mathematics") }; shot("05_new_exam")
+        rule.runOnUiThread { rule.activity.navForTest?.navigate("exam/$examId") }; shot("06_question_mcq")
+        rule.onNodeWithText("Next").performClick(); shot("07_question_graph")
+        rule.runOnUiThread { rule.activity.navForTest?.navigate("result/${examId + 1}") }; shot("08_result")
+        rule.runOnUiThread { rule.activity.navForTest?.navigate("review") }; shot("09_flashcard")
+    }
+}

@@ -84,6 +84,7 @@ class Progress(BaseModel):
     mocks: list[MockSummary] = Field(default_factory=list, max_length=20)
     activity_days: list[int] = Field(default_factory=list, max_length=400)
     books: list[BookSummary] = Field(default_factory=list, max_length=150)
+    last_backup: int | None = None      # ms; when the phone last uploaded its encrypted cloud backup (0.9.0+)
 
 
 def _db():

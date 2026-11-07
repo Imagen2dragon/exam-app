@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -65,6 +66,13 @@ import java.time.temporal.ChronoUnit
 private val zone = ZoneId.systemDefault()
 fun fmtDate(ms: Long): String = DateTimeFormatter.ofPattern("d MMM yyyy").format(Instant.ofEpochMilli(ms).atZone(zone))
 fun fmtDay(day: String): String = runCatching { DateTimeFormatter.ofPattern("d MMM").format(LocalDate.parse(day)) }.getOrDefault(day)
+/** The phone's cloud-backup state for the header; `late` = no backup for more than 3 days. */
+fun backupStatus(p: Progress, nowMs: Long): Pair<String, Boolean> {
+    val last = p.last_backup ?: return "Cloud backup: not turned on in the phone's Settings" to false
+    val late = nowMs - last > 3 * 86_400_000L
+    return ("Cloud backup: ${ago(last / 1000.0)}" + if (late) " - check the phone is online and signed in" else "") to late
+}
+
 fun ago(secs: Double?): String {
     if (secs == null) return "never"
     val m = (System.currentTimeMillis() / 1000.0 - secs) / 60
@@ -158,6 +166,14 @@ private fun Header(data: Loaded, busy: Boolean, onSelect: (Device) -> Unit, onRe
                 val p = d.latest
                 Text("Last update from the phone: ${ago(d.last_seen)}" + (p?.let { " · app ${it.app_version} · ${it.stream} science, grade ${it.grade}" } ?: ""),
                     style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                p?.let {
+                    val (text, late) = backupStatus(it, System.currentTimeMillis())
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (late) Icon(Icons.Filled.Warning, null, Modifier.size(16.dp).padding(end = 4.dp), tint = MaterialTheme.colorScheme.error)
+                        Text(text, style = MaterialTheme.typography.bodyMedium,
+                            color = if (late) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
             }
         }
         if (data.devices.devices.size > 1) Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {

@@ -53,6 +53,8 @@ See [`docs/RESEARCH_AND_ROADMAP.md`](docs/RESEARCH_AND_ROADMAP.md) for the resea
 ## 1. Run the server
 **On a server, with HTTPS:** follow [`docs/DEPLOY.md`](docs/DEPLOY.md): Docker + Caddy (automatic HTTPS certificate), the keys to generate, a smoke test that calls every AI feature once and prints the cost, backups and updates. About 30 minutes on a ~US$5/month server.
 
+**Encrypted cloud backup (optional):** [`docs/SUPABASE.md`](docs/SUPABASE.md). A free Supabase project in Frankfurt. The phone encrypts its backup with the student's recovery code before uploading, so nobody else can read it.
+
 **On your computer, for development:**
 ```bash
 cd server
@@ -88,6 +90,7 @@ Settings (gear on Home) → enter the server address (`https://…`) and the dev
 ```
 server/   FastAPI proxy: auth, rate limits, validation, Claude calls (ai.py), JSON schemas
 android/  Kotlin + Jetpack Compose + Room (FTS4) – no OkHttp/Retrofit/DI libs, to stay small
+supabase/ setup.sql for the encrypted backup bucket (+ policy tests)
 deploy/   docker-compose + Caddyfile (HTTPS) + backup script; guide in docs/DEPLOY.md
 admin/    Windows admin app (Compose Desktop, MSI)
 docs/     research + roadmap, deploy and release guides, screenshots

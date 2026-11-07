@@ -192,6 +192,11 @@ def run(send: Send, device_token: str, admin_token: str | None, full: bool = Fal
     if status != 200:
         return False
 
+    status, cfg = call(send, "GET", "/v1/config", None, device_token)
+    backup = cfg.get("backup") if status == 200 and isinstance(cfg, dict) else None
+    report("Config for the phone", status == 200,
+           f"cloud backup: {backup['url']}" if backup else "cloud backup not set up (optional, see docs/SUPABASE.md)")
+
     out("\nAI features (real Claude calls)")
     for name, method, path, body, verify in checks(full):
         t0 = time.monotonic()

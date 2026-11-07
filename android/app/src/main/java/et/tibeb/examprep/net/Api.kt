@@ -25,7 +25,12 @@ import java.net.URL
 @Serializable data class ExamRes(val title: String, val minutes: Int, val questions: List<ApiQuestion>)
 @Serializable data class GradeRes(val score: Double, val verdict: String, val feedback: String, val mistakes: List<String> = emptyList())
 
-@Serializable data class ExtractReq(val mime: String, val data_b64: String, val subject: String, val title: String, val doc_type: String, val grade: Int)
+@Serializable data class PageReq(val mime: String, val data_b64: String)
+/** One file in data_b64, or a photographed chapter in `pages` (reading order). */
+@Serializable data class ExtractReq(
+    val mime: String, val data_b64: String, val subject: String, val title: String, val doc_type: String, val grade: Int,
+    val pages: List<PageReq> = emptyList(),
+)
 @Serializable data class NotesReq(val subject: String, val topic: String, val grade: Int, val context: List<String>, val language: String, val style: String)
 @Serializable data class FlashReq(val subject: String, val topic: String, val grade: Int, val context: List<String>, val count: Int)
 @Serializable data class ExamReq(

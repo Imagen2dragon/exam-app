@@ -1,7 +1,7 @@
 """Request models (validated, size-limited) and JSON schemas for Claude's structured outputs."""
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 Subject = Literal[
     "Mathematics", "Physics", "Chemistry", "Biology", "English",
@@ -12,13 +12,30 @@ MAX_B64 = 28_000_000  # ~20 MB file once base64-encoded; Claude's request limit 
 MAX_CHUNK = 6_000
 
 
+MAX_PAGES = 30
+MAX_PAGE_B64 = 3_000_000  # ~2.2 MB per photographed page; the app sends ~300 KB JPEGs
+
+
+class PageImage(BaseModel):
+    mime: Literal["image/jpeg", "image/png", "image/webp"]
+    data_b64: str = Field(min_length=1, max_length=MAX_PAGE_B64)
+
+
 class ExtractReq(BaseModel):
+    """Either one file (`data_b64` + `mime`) or a chapter of page photos in reading order (`pages`)."""
     mime: Literal["application/pdf", "image/jpeg", "image/png", "image/webp"]
-    data_b64: str = Field(max_length=MAX_B64)
+    data_b64: str = Field(default="", max_length=MAX_B64)
+    pages: list[PageImage] = Field(default_factory=list, max_length=MAX_PAGES)
     subject: Subject
     title: str = Field(max_length=200)
     doc_type: Literal["textbook", "teacher_guide", "past_exam", "worksheet", "notes"]
     grade: int = Field(ge=9, le=12)
+
+    @model_validator(mode="after")
+    def one_source(self):
+        if bool(self.data_b64) == bool(self.pages):
+            raise ValueError("send either data_b64 or pages, not both or neither")
+        return self
 
 
 class ContextReq(BaseModel):

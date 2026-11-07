@@ -42,6 +42,7 @@ import et.tibeb.examprep.ui.screens.LibraryScreen
 import et.tibeb.examprep.ui.screens.MockScreen
 import et.tibeb.examprep.ui.screens.MockSetupScreen
 import et.tibeb.examprep.ui.screens.NoteScreen
+import et.tibeb.examprep.ui.screens.PagesScreen
 import et.tibeb.examprep.ui.screens.ResultScreen
 import et.tibeb.examprep.ui.screens.ReviewScreen
 import et.tibeb.examprep.ui.screens.SettingsScreen
@@ -96,7 +97,8 @@ private fun AppNav(onNav: (NavHostController) -> Unit) {
     ) { pad ->
         NavHost(nav, startDestination = "home", modifier = Modifier.padding(pad)) {
             composable("home") { HomeScreen(nav) }
-            composable("library") { LibraryScreen() }
+            composable("library") { LibraryScreen(nav) }
+            composable("pages") { PagesScreen(nav) }
             composable("study") { StudyScreen(nav) }
             composable("exams") { ExamsScreen(nav) }
             composable("settings") { SettingsScreen(nav) }

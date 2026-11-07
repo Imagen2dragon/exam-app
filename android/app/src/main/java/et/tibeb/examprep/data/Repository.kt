@@ -12,6 +12,7 @@ import et.tibeb.examprep.net.ExtractReq
 import et.tibeb.examprep.net.FlashReq
 import et.tibeb.examprep.net.GradeReq
 import et.tibeb.examprep.net.MockPaperReq
+import et.tibeb.examprep.net.PageReq
 import et.tibeb.examprep.net.NotesReq
 import et.tibeb.examprep.net.json
 import et.tibeb.examprep.util.MAX_UPLOAD_BYTES
@@ -38,6 +39,8 @@ data class ExamConfig(
     val subject: String, val topic: String, val grade: Int, val count: Int, val difficulty: String,
     val types: List<String>, val useAi: Boolean,
 )
+
+const val MAX_PAGES = 30
 
 class Repository(private val ctx: Context, private val db: AppDb, private val api: Api, private val str: (Int, Array<out Any>) -> String) {
     private fun s(id: Int, vararg a: Any) = str(id, a)
@@ -91,6 +94,19 @@ class Repository(private val ctx: Context, private val db: AppDb, private val ap
         return id
     }
 
+    /** A chapter photographed page by page: the staged JPEGs move into the upload queue in this order. */
+    suspend fun queuePages(pages: List<File>, title: String, subject: String, grade: Int, docType: String): Long {
+        require(pages.size in 1..MAX_PAGES)
+        val id = dao.insert(Document(title = title.take(200), subject = subject, grade = grade, docType = docType, status = "queued"))
+        val dir = pendingDir(id).apply { mkdirs() }
+        pages.forEachIndexed { i, f ->
+            val target = File(dir, "page_%03d.jpg".format(i + 1))
+            if (!f.renameTo(target)) { f.copyTo(target, overwrite = true); f.delete() }
+        }
+        ImportWorker.enqueue(ctx, id)
+        return id
+    }
+
     /** Called by ImportWorker. Sends the queued file to the AI and stores the extracted text. */
     suspend fun processImport(docId: Long, giveUp: Boolean): ImportOutcome {
         val doc = dao.document(docId) ?: return ImportOutcome.FAILED
@@ -102,8 +118,12 @@ class Repository(private val ctx: Context, private val db: AppDb, private val ap
         dao.update(doc.copy(status = "processing", error = ""))
         val file = files.first()
         val mime = if (file.extension == "pdf") "application/pdf" else "image/jpeg"
+        val req = if (files.size > 1)   // a photographed chapter: all pages in one request, in order
+            ExtractReq("image/jpeg", "", doc.subject, doc.title, doc.docType, doc.grade,
+                pages = files.map { PageReq("image/jpeg", it.readBytes().b64()) })
+        else ExtractReq(mime, file.readBytes().b64(), doc.subject, doc.title, doc.docType, doc.grade)
         return try {
-            val res = api.extract(ExtractReq(mime, file.readBytes().b64(), doc.subject, doc.title, doc.docType, doc.grade))
+            val res = api.extract(req)
             val chunks = res.chunks.map { Chunk(docId = docId, subject = doc.subject, grade = doc.grade, unit = it.unit, topic = it.topic, text = it.text) }
             val qs = res.questions.map { it.toEntity(doc.subject, doc.grade, "past", docId) }
             dao.replaceDocumentContent(doc.copy(status = "ready", summary = res.summary, error = ""), chunks, qs)
@@ -147,7 +167,12 @@ class Repository(private val ctx: Context, private val db: AppDb, private val ap
     }
 
     init {
-        scope.launch { runCatching { recoverStuckImports() } }
+        scope.launch {
+            runCatching { recoverStuckImports() }
+            // Photos from a chapter that was never uploaded (app closed mid-capture) are cleared after a day.
+            File(ctx.filesDir, "staging").listFiles()?.filter { System.currentTimeMillis() - it.lastModified() > 24 * 60 * 60 * 1000L }
+                ?.forEach { it.deleteRecursively() }
+        }
     }
 
     /** Finds the most relevant stored pages for a topic, fully on-device. */

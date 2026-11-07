@@ -72,7 +72,17 @@ async def extract(r: ExtractReq, _: str = Depends(device)):
         "the correct choice letter in answer; if the key is not shown, solve it yourself and "
         "say so in explanation. Use numeric_answer 0, tolerance 0 and unit '' when not numeric."
     )
-    return await ai.structured([ai.doc_block(r.mime, r.data_b64), {"type": "text", "text": task}],
+    if r.pages:
+        # A chapter photographed page by page: label each image so the reading order is unambiguous.
+        content: list[dict] = []
+        for i, page in enumerate(r.pages, start=1):
+            content.append({"type": "text", "text": f"Page {i} of {len(r.pages)}:"})
+            content.append(ai.doc_block(page.mime, page.data_b64))
+        task += ("\nThese are phone photos of consecutive pages: read them in order, join text that "
+                 "continues across pages, and ignore fingers, shadows and anything outside the page.")
+    else:
+        content = [ai.doc_block(r.mime, r.data_b64)]
+    return await ai.structured(content + [{"type": "text", "text": task}],
                                EXTRACT_SCHEMA, effort="medium", max_tokens=64_000)
 
 

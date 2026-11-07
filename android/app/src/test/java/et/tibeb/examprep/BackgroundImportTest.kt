@@ -110,4 +110,17 @@ class BackgroundImportTest {
         assertEquals("failed", status)
         assertEquals("queued", repo.dao.document(fresh)!!.status)
     }
+
+    @Test fun chapterPhotosAreSentAsOrderedPages() = runBlocking {
+        val staged = (1..3).map { n -> File(ctx.cacheDir, "s$n.jpg").apply { writeBytes("page-$n".toByteArray()) } }
+        val id = repo.queuePages(staged, "Biology Unit 2", "Biology", 11, "textbook")
+        assertEquals(listOf("page_001.jpg", "page_002.jpg", "page_003.jpg"), pending(id).list()!!.sorted())
+        assertTrue("staged files moved, not duplicated", staged.none { it.exists() })
+        behaviour = { ExtractRes("ok", emptyList(), emptyList()) }
+        assertEquals(ImportOutcome.DONE, repo.processImport(id, giveUp = false))
+        val req = sent.single()
+        assertEquals("", req.data_b64)
+        val decoded = req.pages.map { String(android.util.Base64.decode(it.data_b64, 0)) }
+        assertEquals(listOf("page-1", "page-2", "page-3"), decoded)
+    }
 }

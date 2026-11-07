@@ -1,2 +1,3 @@
 <?xml version="1.0" encoding="utf-8"?>
-<paths><files-path name="answers" path="answers/" /></paths>
+<paths><files-path name="answers" path="answers/" />
+    <files-path name="staging" path="staging/" /></paths>

@@ -1,5 +1,9 @@
 package et.tibeb.examprep
 
+import androidx.compose.ui.res.stringResource
+import et.tibeb.examprep.R
+import android.content.Context
+import et.tibeb.examprep.util.Lang
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -45,6 +49,9 @@ import et.tibeb.examprep.ui.screens.StudyScreen
 import et.tibeb.examprep.ui.theme.TibebTheme
 
 class MainActivity : ComponentActivity() {
+    // Apply the in-app language (System / English / Amharic) before any resources load.
+    override fun attachBaseContext(newBase: Context) = super.attachBaseContext(Lang.wrap(newBase))
+
     /** Exposed only so screenshot tests can jump to deep screens. */
     internal var navForTest: NavHostController? = null
 
@@ -58,12 +65,12 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private data class Tab(val route: String, val label: String, val icon: ImageVector)
+private data class Tab(val route: String, val label: Int, val icon: ImageVector)
 private val tabs = listOf(
-    Tab("home", "Home", Icons.Filled.Home),
-    Tab("library", "Library", Icons.AutoMirrored.Filled.List),
-    Tab("study", "Study", Icons.Filled.Create),
-    Tab("exams", "Exams", Icons.Filled.Star),
+    Tab("home", R.string.tab_home, Icons.Filled.Home),
+    Tab("library", R.string.tab_library, Icons.AutoMirrored.Filled.List),
+    Tab("study", R.string.tab_study, Icons.Filled.Create),
+    Tab("exams", R.string.tab_exams, Icons.Filled.Star),
 )
 
 @Composable
@@ -81,7 +88,7 @@ private fun AppNav(onNav: (NavHostController) -> Unit) {
                         selected = route == t.route,
                         onClick = { nav.tab(t.route) },
                         icon = { Icon(t.icon, contentDescription = null) },
-                        label = { Text(t.label) },
+                        label = { Text(stringResource(t.label)) },
                     )
                 }
             }

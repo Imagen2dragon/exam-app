@@ -1,5 +1,9 @@
 package et.tibeb.examprep.ui.screens
 
+import androidx.compose.ui.res.stringResource
+import et.tibeb.examprep.R
+import et.tibeb.examprep.ui.streamName
+import et.tibeb.examprep.ui.subjectName
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -59,7 +63,7 @@ import et.tibeb.examprep.ui.SubjectDot
 import et.tibeb.examprep.ui.TCard
 import kotlinx.coroutines.launch
 
-private val LENGTHS = listOf(30 to "Quick", 60 to "Standard", 100 to "Full")
+private val LENGTHS = listOf(30 to R.string.len_quick, 60 to R.string.len_standard, 100 to R.string.len_full)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,52 +74,52 @@ fun MockSetupScreen(nav: NavHostController) {
     var perPaper by remember { mutableIntStateOf(60) }
     var useAi by remember { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
+    val useAiDesc = stringResource(R.string.mock_use_ai_desc)
     val subjects = streamSubjects(stream)
     val totalMin = subjects.sumOf { paperMinutes(it, perPaper) }
 
     Column(Modifier.fillMaxSize()) {
-        TopAppBar(title = { Text("Full national mock") },
-            navigationIcon = { IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+        TopAppBar(title = { Text(stringResource(R.string.mock_setup_title)) },
+            navigationIcon = { IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) } },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background))
         Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Six papers, each out of 100, the same way the ESSLCE is scored. Pass mark for direct university admission: 300 / 600.",
+            Text(stringResource(R.string.mock_setup_intro),
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             TCard {
-                Text("Stream", style = MaterialTheme.typography.labelLarge)
-                ChoiceChips(listOf("natural", "social"), setOf(stream), { if (it == "natural") "Natural science" else "Social science" }) { stream = it }
-                Text("Questions per paper", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 12.dp))
+                Text(stringResource(R.string.set_stream), style = MaterialTheme.typography.labelLarge)
+                ChoiceChips(listOf("natural", "social"), setOf(stream), { streamName(it) }) { stream = it }
+                Text(stringResource(R.string.mock_qpp), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 12.dp))
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                     LENGTHS.forEachIndexed { i, (n, l) ->
-                        SegmentedButton(selected = perPaper == n, onClick = { perPaper = n }, shape = SegmentedButtonDefaults.itemShape(i, LENGTHS.size)) { Text("$l · $n") }
+                        SegmentedButton(selected = perPaper == n, onClick = { perPaper = n }, shape = SegmentedButtonDefaults.itemShape(i, LENGTHS.size)) { Text(stringResource(l) + " · $n") }
                     }
                 }
             }
             TCard {
-                Text("Papers", style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.mock_papers), style = MaterialTheme.typography.titleSmall)
                 subjects.forEachIndexed { i, s ->
                     if (i > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     Row(Modifier.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                         SubjectDot(s); Spacer(Modifier.width(10.dp))
-                        Text(s, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-                        Text("$perPaper Q · ${paperMinutes(s, perPaper)} min", style = MaterialTheme.typography.labelLarge,
+                        Text(subjectName(s), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                        Text(stringResource(R.string.mock_q_min, perPaper, paperMinutes(s, perPaper)), style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-                Text("Total ≈ ${totalMin / 60} h ${totalMin % 60} min. Sit one paper at a time, like the real exam days.",
+                Text(stringResource(R.string.mock_total, totalMin / 60, totalMin % 60),
                     style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
-                Text("Timings are estimates (EAES does not publish them per paper).", style = MaterialTheme.typography.bodySmall,
+                Text(stringResource(R.string.mock_estimates), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             TCard {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text(if (useAi) "New AI papers (online)" else "From saved past papers (offline)", style = MaterialTheme.typography.titleSmall)
-                        Text(if (useAi) "Each paper is planned across grades 9–12 like the real exam, then written fresh."
-                        else "Uses multiple-choice questions from past exams you uploaded.",
+                        Text(stringResource(if (useAi) R.string.mock_ai_title else R.string.mock_bank_title), style = MaterialTheme.typography.titleSmall)
+                        Text(stringResource(if (useAi) R.string.mock_ai_body else R.string.mock_bank_body),
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    Switch(useAi, { useAi = it }, modifier = Modifier.semantics { contentDescription = "Use AI to write the papers" })
+                    Switch(useAi, { useAi = it }, modifier = Modifier.semantics { contentDescription = useAiDesc })
                 }
             }
             Button(modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), onClick = {
@@ -123,7 +127,7 @@ fun MockSetupScreen(nav: NavHostController) {
                     val id = app.repo.createMock(stream, perPaper, useAi)
                     nav.navigate("mock/$id") { popUpTo("mocksetup") { inclusive = true } }
                 }
-            }) { Text("Create mock", style = MaterialTheme.typography.titleMedium) }
+            }) { Text(stringResource(R.string.mock_create), style = MaterialTheme.typography.titleMedium) }
         }
     }
 }
@@ -149,8 +153,8 @@ fun MockScreen(nav: NavHostController, mockId: Long) {
     }
 
     Column(Modifier.fillMaxSize()) {
-        TopAppBar(title = { Text("National mock") },
-            navigationIcon = { IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+        TopAppBar(title = { Text(stringResource(R.string.mock_title)) },
+            navigationIcon = { IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) } },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background))
         Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -161,15 +165,15 @@ fun MockScreen(nav: NavHostController, mockId: Long) {
                     Spacer(Modifier.width(16.dp))
                     Column {
                         Text("${total.toInt()} / 600", style = MaterialTheme.typography.headlineSmall)
-                        Text("${done.size} of ${subjects.size} papers done", style = MaterialTheme.typography.bodyMedium)
-                        Text(mockVerdict(done.size == subjects.size, total, projected), style = MaterialTheme.typography.bodyMedium,
+                        Text(stringResource(R.string.mock_done_count, done.size, subjects.size), style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(mockVerdict(done.size == subjects.size, total, projected)), style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 Spacer(Modifier.height(12.dp))
                 PassBar(total, projected)
             }
-            SectionTitle("Papers")
+            SectionTitle(stringResource(R.string.mock_papers))
             subjects.forEach { s ->
                 val e = bySubject[s]
                 val job = jobs["paper:$mockId:$s"]
@@ -177,21 +181,21 @@ fun MockScreen(nav: NavHostController, mockId: Long) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         SubjectDot(s); Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
-                            Text(s, style = MaterialTheme.typography.titleMedium)
+                            Text(subjectName(s), style = MaterialTheme.typography.titleMedium)
                             Text(when {
-                                e == null -> "${mock.questionsPerPaper} questions · ${paperMinutes(s, mock.questionsPerPaper)} min"
-                                e.finishedAt > 0 -> "Score ${e.percent().toInt()} / 100"
-                                e.startedAt > 0 -> "In progress"
-                                else -> "Ready · ${e.minutes} min"
+                                e == null -> stringResource(R.string.mock_q_min_long, mock.questionsPerPaper, paperMinutes(s, mock.questionsPerPaper))
+                                e.finishedAt > 0 -> stringResource(R.string.mock_score, e.percent().toInt())
+                                e.startedAt > 0 -> stringResource(R.string.mock_in_progress)
+                                else -> stringResource(R.string.mock_ready, e.minutes)
                             }, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         when {
-                            job?.running == true -> Busy("Writing…")
-                            e != null && e.finishedAt > 0 -> OutlinedButton(onClick = { nav.navigate("result/${e.id}") }) { Text("Review") }
-                            e != null -> Button(onClick = { nav.navigate("exam/${e.id}") }) { Text(if (e.startedAt > 0) "Continue" else "Start") }
+                            job?.running == true -> Busy(stringResource(R.string.mock_writing))
+                            e != null && e.finishedAt > 0 -> OutlinedButton(onClick = { nav.navigate("result/${e.id}") }) { Text(stringResource(R.string.mock_review)) }
+                            e != null -> Button(onClick = { nav.navigate("exam/${e.id}") }) { Text(stringResource(if (e.startedAt > 0) R.string.ex_continue else R.string.mock_start)) }
                             else -> Button(enabled = prepare?.running != true, onClick = {
                                 app.repo.run("paper:$mockId:$s", s) { app.repo.mockPaper(mockId, s) }
-                            }) { Text("Start") }
+                            }) { Text(stringResource(R.string.mock_start)) }
                         }
                     }
                     if (e != null && e.finishedAt > 0) LinearProgressIndicator(progress = { (e.percent() / 100).toFloat() },
@@ -200,16 +204,16 @@ fun MockScreen(nav: NavHostController, mockId: Long) {
                 }
             }
             if (mock.useAi && papers.size < subjects.size) {
-                if (prepare?.running == true) Busy("Preparing all papers… about a minute per paper. You can leave this screen.")
+                if (prepare?.running == true) Busy(stringResource(R.string.mock_preparing))
                 else FilledTonalButton(onClick = { app.repo.run("prepare:$mockId", "mock") { app.repo.prepareMock(mockId) } },
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("Prepare all papers now (then sit them offline)") }
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text(stringResource(R.string.mock_prepare)) }
                 prepare?.error?.let { ErrorText(it) }
             }
             if (done.isNotEmpty()) {
                 val weakest = done.minBy { it.percent() }
                 TCard(onClick = { nav.navigate("newexam?subject=${weakest.subject}") }, container = MaterialTheme.colorScheme.secondaryContainer) {
-                    Text("Weakest paper: ${weakest.subject} (${weakest.percent().toInt()}/100)", style = MaterialTheme.typography.titleSmall)
-                    Text("Tap for a focused practice exam on your mistakes.", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.mock_weakest, subjectName(weakest.subject), weakest.percent().toInt()), style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.mock_weakest_body), style = MaterialTheme.typography.bodyMedium)
                 }
             }
         }
@@ -223,17 +227,17 @@ private fun PassBar(total: Double, projected: Double?) {
         LinearProgressIndicator(progress = { (total / 600).toFloat() }, trackColor = track, modifier = Modifier.fillMaxWidth().height(10.dp))
         Row(Modifier.fillMaxWidth().padding(top = 4.dp)) {
             Text("0", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
-            Text("Pass 300", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f))
+            Text(stringResource(R.string.mock_pass), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f))
             Text("600", style = MaterialTheme.typography.labelSmall)
         }
-        projected?.let { Text("On track for about ${it.toInt()} / 600 at your current average.", style = MaterialTheme.typography.bodySmall) }
+        projected?.let { Text(stringResource(R.string.mock_on_track, it.toInt()), style = MaterialTheme.typography.bodySmall) }
     }
 }
 
-private fun mockVerdict(complete: Boolean, total: Double, projected: Double?): String = when {
-    projected == null -> "Start with any paper."
-    !complete -> if (projected >= 300) "Projected pass – keep going." else "Projected below 300 – focus on weak papers."
-    total >= 450 -> "Excellent – competitive for top programmes."
-    total >= 300 -> "Pass – above the 300 university line."
-    else -> "Below the 300 pass line. Retake after targeted practice."
+private fun mockVerdict(complete: Boolean, total: Double, projected: Double?): Int = when {
+    projected == null -> R.string.mv_start
+    !complete -> if (projected >= 300) R.string.mv_proj_pass else R.string.mv_proj_fail
+    total >= 450 -> R.string.mv_excellent
+    total >= 300 -> R.string.mv_pass
+    else -> R.string.mv_fail
 }

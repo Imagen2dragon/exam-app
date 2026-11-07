@@ -38,19 +38,24 @@ class Prefs(ctx: Context, private val secure: SecureStore) {
         _s.value = load()
     }
 
+    fun setUiLang(tag: String) { p.edit().putString(et.tibeb.examprep.util.Lang.KEY, tag).commit() }
+
     fun setToken(token: String) { secure.put("token", token.trim()); _s.value = load() }
     fun token(): String? = secure.get("token")
 }
 
 /** Manual dependency container: no DI framework, fewer classes, faster cold start. */
 class TibebApp : Application() {
+    /** Localised string for messages created outside the UI (errors from background jobs). */
+    fun str(id: Int, vararg args: Any): String = et.tibeb.examprep.util.Lang.wrap(this).getString(id, *args)
+
     lateinit var prefs: Prefs; private set
     lateinit var repo: Repository; private set
 
     override fun onCreate() {
         super.onCreate()
         prefs = Prefs(this, SecureStore(this))
-        val api = Api(baseUrl = { prefs.settings.value.serverUrl }, token = { prefs.token() })
-        repo = Repository(this, AppDb.create(this), api)
+        val api = Api(baseUrl = { prefs.settings.value.serverUrl }, token = { prefs.token() }, str = ::str)
+        repo = Repository(this, AppDb.create(this), api, ::str)
     }
 }

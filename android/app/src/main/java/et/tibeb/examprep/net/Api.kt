@@ -1,5 +1,6 @@
 package et.tibeb.examprep.net
 
+import et.tibeb.examprep.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -42,10 +43,13 @@ import java.net.URL
 
 class ApiException(message: String) : Exception(message)
 
+typealias Str = (Int, Array<out Any>) -> String
+
 val json = Json { ignoreUnknownKeys = true; explicitNulls = false; encodeDefaults = true }
 
 /** Tiny HTTPS client on the platform HttpURLConnection: no OkHttp/Retrofit, so a smaller APK. */
-class Api(private val baseUrl: () -> String, private val token: () -> String?) {
+class Api(private val baseUrl: () -> String, private val token: () -> String?, private val str: (Int, Array<out Any>) -> String) {
+    private fun s(id: Int, vararg a: Any) = str(id, a)
 
     suspend fun extract(r: ExtractReq): ExtractRes = post("/v1/extract", json.encodeToString(r), 600)
     suspend fun notes(r: NotesReq): NotesRes = post("/v1/notes", json.encodeToString(r), 240)
@@ -63,7 +67,7 @@ class Api(private val baseUrl: () -> String, private val token: () -> String?) {
 
     private fun open(path: String, readSeconds: Int): HttpURLConnection {
         val base = baseUrl().trimEnd('/')
-        if (!isAllowedUrl(base)) throw ApiException("Server address must start with https://")
+        if (!isAllowedUrl(base)) throw ApiException(s(R.string.err_https))
         return (URL(base + path).openConnection() as HttpURLConnection).apply {
             connectTimeout = 20_000
             readTimeout = readSeconds * 1000
@@ -74,7 +78,7 @@ class Api(private val baseUrl: () -> String, private val token: () -> String?) {
 
     private suspend inline fun <reified T> post(path: String, body: String, readSeconds: Int): T =
         withContext(Dispatchers.IO) {
-            if (token().isNullOrBlank()) throw ApiException("Add your device token in Settings first")
+            if (token().isNullOrBlank()) throw ApiException(s(R.string.err_need_token))
             val c = open(path, readSeconds)
             try {
                 c.requestMethod = "POST"
@@ -88,21 +92,24 @@ class Api(private val baseUrl: () -> String, private val token: () -> String?) {
                 if (code !in 200..299) throw ApiException(errorMessage(code, text))
                 json.decodeFromString<T>(text)
             } catch (e: SocketTimeoutException) {
-                throw ApiException("The server took too long. Check your connection and try again.")
+                throw ApiException(s(R.string.err_timeout))
             } catch (e: IOException) {
-                throw ApiException("No connection to the server. Offline features still work.")
+                throw ApiException(s(R.string.err_offline))
             } finally {
                 c.disconnect()
             }
         }
 
     private fun errorMessage(code: Int, body: String): String {
+        // Known statuses get a translated message; the server's English detail is the fallback.
         val detail = runCatching { json.parseToJsonElement(body).jsonObject["detail"]?.jsonPrimitive?.content }.getOrNull()
         return when (code) {
-            401 -> "Device token rejected. Check it in Settings."
-            413 -> detail ?: "File too large."
-            429 -> "Too many requests. Wait a minute."
-            else -> detail ?: "Server error ($code)"
+            401 -> s(R.string.err_401)
+            413 -> s(R.string.err_413)
+            422 -> s(R.string.err_422)
+            429 -> s(R.string.err_429)
+            503 -> s(R.string.err_503)
+            else -> detail?.takeIf { code == 400 } ?: s(R.string.err_server, code)
         }
     }
 

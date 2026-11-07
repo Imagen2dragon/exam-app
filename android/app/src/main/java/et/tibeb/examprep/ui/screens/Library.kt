@@ -1,5 +1,11 @@
 package et.tibeb.examprep.ui.screens
 
+import androidx.compose.ui.res.stringResource
+import et.tibeb.examprep.R
+import et.tibeb.examprep.ui.DOC_TYPE
+import et.tibeb.examprep.ui.gradeShort
+import et.tibeb.examprep.ui.label
+import et.tibeb.examprep.ui.subjectName
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -52,8 +58,6 @@ import et.tibeb.examprep.ui.TCard
 import et.tibeb.examprep.util.displayName
 import kotlinx.coroutines.launch
 
-private val DOC_TYPES = listOf("textbook" to "Textbook", "teacher_guide" to "Teacher guide", "past_exam" to "Past national exam",
-    "worksheet" to "Test / worksheet", "notes" to "Class notes")
 
 @Composable
 fun LibraryScreen() {
@@ -73,16 +77,16 @@ fun LibraryScreen() {
         LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), contentPadding = PaddingValues(bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)) {
             item {
-                Text("Library", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 20.dp))
-                Text("Upload textbooks, past national exams and tests. Tibeb reads them once, keeps only the text, and studies from them offline.",
+                Text(stringResource(R.string.tab_library), style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 20.dp))
+                Text(stringResource(R.string.lib_intro),
                     style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 jobs.filterKeys { it.startsWith("import") }.values.forEach { j ->
                     Spacer(Modifier.height(8.dp))
-                    if (j.running) Busy("Reading “${j.label}”… big books can take a few minutes")
+                    if (j.running) Busy(stringResource(R.string.lib_reading, j.label))
                     j.error?.let { ErrorText(it) }
                 }
             }
-            if (docs.isEmpty()) item { EmptyState("Nothing here yet", "Tap Upload to add your first textbook or past exam (PDF or photo).") }
+            if (docs.isEmpty()) item { EmptyState(stringResource(R.string.lib_empty_title), stringResource(R.string.lib_empty_body)) }
             items(docs, key = { it.id }) { d ->
                 val chunks by app.repo.dao.chunkCount(d.id).collectAsState(0)
                 val questions by app.repo.dao.questionCount(d.id).collectAsState(0)
@@ -92,17 +96,17 @@ fun LibraryScreen() {
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
                             Text(d.title, style = MaterialTheme.typography.titleMedium, maxLines = 2)
-                            Text("${d.subject} · Grade ${d.grade} · ${DOC_TYPES.firstOrNull { it.first == d.docType }?.second ?: d.docType}",
+                            Text("${subjectName(d.subject)} · ${stringResource(R.string.grade_long, d.grade)} · ${label(DOC_TYPE, d.docType)}",
                                 style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        IconButton(onClick = { confirmDelete = d.id }) { Icon(Icons.Filled.Delete, contentDescription = "Delete ${d.title}") }
+                        IconButton(onClick = { confirmDelete = d.id }) { Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.lib_delete_desc, d.title)) }
                     }
                     when (d.status) {
-                        "processing" -> Busy("Processing…")
-                        "failed" -> ErrorText(d.error.ifBlank { "Failed" })
+                        "processing" -> Busy(stringResource(R.string.lib_processing))
+                        "failed" -> ErrorText(d.error.ifBlank { stringResource(R.string.lib_failed) })
                         else -> Text(listOfNotNull(
-                            "$chunks study sections".takeIf { chunks > 0 }, "$questions exam questions".takeIf { questions > 0 },
-                        ).joinToString(" · ").ifBlank { "Saved" } + ". ${d.summary}", style = MaterialTheme.typography.bodyMedium, maxLines = 4,
+                            stringResource(R.string.lib_sections, chunks).takeIf { chunks > 0 }, stringResource(R.string.lib_questions, questions).takeIf { questions > 0 },
+                        ).joinToString(" · ").ifBlank { stringResource(R.string.lib_saved) } + ". ${d.summary}", style = MaterialTheme.typography.bodyMedium, maxLines = 4,
                             modifier = Modifier.padding(top = 8.dp))
                     }
                 }
@@ -110,7 +114,7 @@ fun LibraryScreen() {
         }
         ExtendedFloatingActionButton(
             onClick = { pick.launch(arrayOf("application/pdf", "image/*")) },
-            icon = { Icon(Icons.Filled.Add, null) }, text = { Text("Upload") },
+            icon = { Icon(Icons.Filled.Add, null) }, text = { Text(stringResource(R.string.lib_upload)) },
             modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
         )
     }
@@ -124,10 +128,10 @@ fun LibraryScreen() {
     }
     confirmDelete?.let { id ->
         AlertDialog(onDismissRequest = { confirmDelete = null },
-            title = { Text("Delete this book?") },
-            text = { Text("Its study sections and saved past-exam questions are removed. Notes, flashcards and exam history stay.") },
-            confirmButton = { TextButton(onClick = { scope.launch { app.repo.dao.deleteDocumentFully(id) }; confirmDelete = null }) { Text("Delete") } },
-            dismissButton = { TextButton(onClick = { confirmDelete = null }) { Text("Cancel") } })
+            title = { Text(stringResource(R.string.lib_delete_title)) },
+            text = { Text(stringResource(R.string.lib_delete_body)) },
+            confirmButton = { TextButton(onClick = { scope.launch { app.repo.dao.deleteDocumentFully(id) }; confirmDelete = null }) { Text(stringResource(R.string.delete)) } },
+            dismissButton = { TextButton(onClick = { confirmDelete = null }) { Text(stringResource(R.string.cancel)) } })
     }
 }
 
@@ -139,21 +143,21 @@ private fun ImportDialog(defaultTitle: String, defaultGrade: Int, onDismiss: () 
     var type by remember { mutableStateOf("textbook") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add to library") },
+        title = { Text(stringResource(R.string.lib_add_title)) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(title, { title = it.take(200) }, label = { Text("Title") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                Text("Subject", style = MaterialTheme.typography.labelLarge)
-                ChoiceChips(SUBJECTS, setOf(subject), { it }) { subject = it }
-                Text("Grade", style = MaterialTheme.typography.labelLarge)
-                ChoiceChips(listOf(9, 10, 11, 12), setOf(grade), { "G$it" }) { grade = it }
-                Text("Type", style = MaterialTheme.typography.labelLarge)
-                ChoiceChips(DOC_TYPES.map { it.first }, setOf(type), { k -> DOC_TYPES.first { it.first == k }.second }) { type = it }
-                Text("Max 20 MB. For a full textbook, upload one unit at a time for best results.",
+                OutlinedTextField(title, { title = it.take(200) }, label = { Text(stringResource(R.string.lib_field_title)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                Text(stringResource(R.string.label_subject), style = MaterialTheme.typography.labelLarge)
+                ChoiceChips(SUBJECTS, setOf(subject), { subjectName(it) }) { subject = it }
+                Text(stringResource(R.string.label_grade), style = MaterialTheme.typography.labelLarge)
+                ChoiceChips(listOf(9, 10, 11, 12), setOf(grade), { gradeShort(it) }) { grade = it }
+                Text(stringResource(R.string.label_type), style = MaterialTheme.typography.labelLarge)
+                ChoiceChips(DOC_TYPE.keys.toList(), setOf(type), { label(DOC_TYPE, it) }) { type = it }
+                Text(stringResource(R.string.lib_limit),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
-        confirmButton = { TextButton(enabled = title.isNotBlank(), onClick = { onImport(title, subject, grade, type) }) { Text("Upload") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(enabled = title.isNotBlank(), onClick = { onImport(title, subject, grade, type) }) { Text(stringResource(R.string.lib_upload)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
 }

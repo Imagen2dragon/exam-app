@@ -1,5 +1,15 @@
 package et.tibeb.examprep.ui.screens
 
+import androidx.compose.ui.res.stringResource
+import et.tibeb.examprep.R
+import androidx.compose.ui.res.pluralStringResource
+import et.tibeb.examprep.ui.DIFFICULTY
+import et.tibeb.examprep.ui.QTYPE
+import et.tibeb.examprep.ui.date
+import et.tibeb.examprep.ui.gradeShort
+import et.tibeb.examprep.ui.label
+import et.tibeb.examprep.ui.streamName
+import et.tibeb.examprep.ui.subjectName
 import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.activity.compose.BackHandler
@@ -95,10 +105,7 @@ import et.tibeb.examprep.util.answersDir
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
-import java.text.DateFormat
-import java.util.Date
 
-private val TYPE_LABEL = mapOf("mcq" to "Multiple choice", "numeric" to "Calculation", "short" to "Short answer", "graph" to "Draw graph / diagram")
 private val LETTERS = listOf("A", "B", "C", "D", "E")
 
 @Composable
@@ -111,11 +118,11 @@ fun ExamsScreen(nav: NavHostController) {
         LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), contentPadding = PaddingValues(bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)) {
             item {
-                Text("Exams", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 20.dp))
+                Text(stringResource(R.string.tab_exams), style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 20.dp))
                 Spacer(Modifier.height(12.dp))
                 TCard(onClick = { nav.navigate("mocksetup") }, container = MaterialTheme.colorScheme.primary) {
-                    Text("Full national mock · 600", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onPrimary)
-                    Text("All six papers of your stream, timed, scored out of 600 against the 300 pass line.",
+                    Text(stringResource(R.string.ex_mock_card_title), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onPrimary)
+                    Text(stringResource(R.string.ex_mock_card_body),
                         color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f))
                 }
             }
@@ -125,16 +132,16 @@ fun ExamsScreen(nav: NavHostController) {
                 TCard(onClick = { nav.navigate("mock/${m.id}") }) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text("National mock · ${if (m.stream == "social") "Social" else "Natural"} stream", style = MaterialTheme.typography.titleMedium)
-                            Text(DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(m.createdAt)) + " · ${done.size}/6 papers",
+                            Text(stringResource(R.string.ex_mock_item, streamName(m.stream)), style = MaterialTheme.typography.titleMedium)
+                            Text(date(m.createdAt) + " · " + stringResource(R.string.ex_papers_done, done.size),
                                 style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Text("${done.sumOf { it.percent() }.toInt()}/600", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
-            if (exams.isNotEmpty()) item { SectionTitle("Practice exams") }
-            if (exams.isEmpty() && mocks.isEmpty()) item { EmptyState("No exams yet", "Tap New exam. Start with 10 questions to see how it works.") }
+            if (exams.isNotEmpty()) item { SectionTitle(stringResource(R.string.ex_practice)) }
+            if (exams.isEmpty() && mocks.isEmpty()) item { EmptyState(stringResource(R.string.ex_empty_title), stringResource(R.string.ex_empty_body)) }
             items(exams, key = { it.id }) { e ->
                 TCard(onClick = { nav.navigate(if (e.finishedAt > 0) "result/${e.id}" else "exam/${e.id}") }) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -142,16 +149,16 @@ fun ExamsScreen(nav: NavHostController) {
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
                             Text(e.title, style = MaterialTheme.typography.titleMedium, maxLines = 2)
-                            Text(DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(e.createdAt)) + " · ${e.minutes} min",
+                            Text(date(e.createdAt) + " · " + stringResource(R.string.minutes_short, e.minutes),
                                 style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        Text(if (e.finishedAt > 0) "${pct(e.score, e.maxScore)}%" else "Continue",
+                        Text(if (e.finishedAt > 0) "${pct(e.score, e.maxScore)}%" else stringResource(R.string.ex_continue),
                             style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
         }
-        ExtendedFloatingActionButton(onClick = { nav.navigate("newexam") }, icon = { Icon(Icons.Filled.Add, null) }, text = { Text("New exam") },
+        ExtendedFloatingActionButton(onClick = { nav.navigate("newexam") }, icon = { Icon(Icons.Filled.Add, null) }, text = { Text(stringResource(R.string.ex_new)) },
             modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp))
     }
 }
@@ -168,6 +175,7 @@ fun ExamSetupScreen(nav: NavHostController, initialSubject: String) {
     var difficulty by remember { mutableStateOf("hard") }
     var types by remember { mutableStateOf(setOf("mcq")) }
     var useAi by remember { mutableStateOf(true) }
+    val useAiDesc = stringResource(R.string.ex_use_ai_desc)
     val topics by app.repo.dao.topics(subject).collectAsState(emptyList())
     val pastCount by app.repo.dao.pastCount(subject).collectAsState(0)
     val job = app.repo.jobs.collectAsState().value["exam"]
@@ -177,57 +185,57 @@ fun ExamSetupScreen(nav: NavHostController, initialSubject: String) {
     }
 
     Column(Modifier.fillMaxSize()) {
-        TopAppBar(title = { Text("New exam") },
-            navigationIcon = { IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+        TopAppBar(title = { Text(stringResource(R.string.ex_new)) },
+            navigationIcon = { IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) } },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background))
         Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)) {
             TCard {
-                Text("Subject", style = MaterialTheme.typography.labelLarge)
-                ChoiceChips(SUBJECTS, setOf(subject), { it }) { subject = it; topic = "" }
+                Text(stringResource(R.string.label_subject), style = MaterialTheme.typography.labelLarge)
+                ChoiceChips(SUBJECTS, setOf(subject), { subjectName(it) }) { subject = it; topic = "" }
                 Spacer(Modifier.height(8.dp))
-                OutlinedTextField(topic, { topic = it.take(200) }, label = { Text("Topics (blank = whole syllabus)") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(topic, { topic = it.take(200) }, label = { Text(stringResource(R.string.ex_topics_hint)) }, modifier = Modifier.fillMaxWidth())
                 if (topics.isNotEmpty()) {
                     Row(Modifier.horizontalScroll(rememberScrollState()).padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         topics.take(15).forEach { t -> OutlinedButton(onClick = { topic = if (topic.isBlank()) t else "$topic, $t" }) { Text(t, maxLines = 1) } }
                     }
                 }
-                Text("Grade", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 8.dp))
-                ChoiceChips(listOf(9, 10, 11, 12), setOf(grade), { "G$it" }) { grade = it }
+                Text(stringResource(R.string.label_grade), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 8.dp))
+                ChoiceChips(listOf(9, 10, 11, 12), setOf(grade), { gradeShort(it) }) { grade = it }
             }
             TCard {
-                Text("Question types", style = MaterialTheme.typography.labelLarge)
-                ChoiceChips(TYPE_LABEL.keys.toList(), types, { TYPE_LABEL.getValue(it) }) { t ->
+                Text(stringResource(R.string.ex_qtypes), style = MaterialTheme.typography.labelLarge)
+                ChoiceChips(QTYPE.keys.toList(), types, { label(QTYPE, it) }) { t ->
                     types = if (t in types && types.size > 1) types - t else types + t
                 }
-                Text("Difficulty", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 12.dp))
-                val diffs = listOf("standard" to "National", "hard" to "Hard", "very_hard" to "Very hard")
+                Text(stringResource(R.string.ex_difficulty), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 12.dp))
+                val diffs = DIFFICULTY.keys.map { it to label(DIFFICULTY, it) }
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                     diffs.forEachIndexed { i, (k, l) ->
                         SegmentedButton(selected = difficulty == k, onClick = { difficulty = k }, shape = SegmentedButtonDefaults.itemShape(i, diffs.size)) { Text(l) }
                     }
                 }
-                Text("${count.toInt()} questions · about ${(count * 1.4).toInt()} min", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 12.dp))
+                Text(stringResource(R.string.ex_count_time, count.toInt(), (count * 1.4).toInt()), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 12.dp))
                 Slider(count, { count = it }, valueRange = 5f..60f, steps = 10)
             }
             TCard {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text(if (useAi) "AI-generated (online)" else "From saved past exams (offline)", style = MaterialTheme.typography.titleSmall)
-                        Text(if (useAi) "New questions written from your books, past papers and weak topics."
-                        else "$pastCount saved $subject questions. No internet needed.",
+                        Text(stringResource(if (useAi) R.string.ex_ai_title else R.string.ex_bank_title), style = MaterialTheme.typography.titleSmall)
+                        Text(if (useAi) stringResource(R.string.ex_ai_body)
+                        else stringResource(R.string.ex_bank_body, pastCount, subjectName(subject)),
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    Switch(useAi, { useAi = it }, modifier = Modifier.semantics { contentDescription = "Use AI to generate questions" })
+                    Switch(useAi, { useAi = it }, modifier = Modifier.semantics { contentDescription = useAiDesc })
                 }
             }
             job?.error?.let { ErrorText(it) }
-            if (job?.running == true) Busy("Writing your exam… hard exams take 1–3 minutes")
+            if (job?.running == true) Busy(stringResource(R.string.ex_writing))
             else Button(modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), onClick = {
                 app.repo.run("exam", subject) {
                     app.repo.createExam(ExamConfig(subject, topic, grade, count.toInt(), difficulty, types.toList(), useAi))
                 }
-            }) { Text("Create exam", style = MaterialTheme.typography.titleMedium) }
+            }) { Text(stringResource(R.string.ex_create), style = MaterialTheme.typography.titleMedium) }
         }
     }
 }
@@ -262,9 +270,8 @@ fun ExamScreen(nav: NavHostController, examId: Long) {
     val answered = items.count { (drafts[it.idx] ?: it.response).isNotBlank() || it.imagePath.isNotBlank() }
 
     val tmpFile = remember { File(ctx.answersDir(), "capture.jpg") }
-    val tmpUri = remember { FileProvider.getUriForFile(ctx, ctx.packageName + ".files", tmpFile) }
     val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
-        if (ok) scope.launch { app.repo.attachPhoto(examId, q.idx, tmpUri); photoVersion++ }
+        if (ok) scope.launch { app.repo.attachPhoto(examId, q.idx, Uri.fromFile(tmpFile)); photoVersion++ }
     }
     val gallery = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri: Uri? ->
         if (uri != null) scope.launch { app.repo.attachPhoto(examId, q.idx, uri); photoVersion++ }
@@ -274,15 +281,16 @@ fun ExamScreen(nav: NavHostController, examId: Long) {
         TopAppBar(
             title = {
                 Column {
-                    Text("Question ${idx + 1} of ${items.size}", style = MaterialTheme.typography.titleMedium)
-                    Text("$answered answered", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.ex_q_of, idx + 1, items.size), style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.ex_answered, answered), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             },
-            navigationIcon = { IconButton(onClick = { confirm = true }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Leave exam") } },
+            navigationIcon = { IconButton(onClick = { confirm = true }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.ex_leave)) } },
             actions = {
                 val m = (left.coerceAtLeast(0) / 60000).toInt(); val s = (left.coerceAtLeast(0) / 1000 % 60).toInt()
+                val leftDesc = stringResource(R.string.ex_min_left, m)
                 Surface(shape = CircleShape, color = if (left < 5 * 60_000) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer,
-                    modifier = Modifier.padding(end = 12.dp).semantics { contentDescription = "$m minutes left" }) {
+                    modifier = Modifier.padding(end = 12.dp).semantics { contentDescription = leftDesc }) {
                     Text("%02d:%02d".format(m, s), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
                 }
             },
@@ -290,7 +298,7 @@ fun ExamScreen(nav: NavHostController, examId: Long) {
         )
         LinearProgressIndicator(progress = { (idx + 1f) / items.size }, modifier = Modifier.fillMaxWidth())
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("${TYPE_LABEL[q.type] ?: q.type} · ${q.marks} mark${if (q.marks > 1) "s" else ""} · ${q.topic}",
+            Text("${label(QTYPE, q.type)} · ${pluralStringResource(R.plurals.marks, q.marks, q.marks)} · ${q.topic}",
                 style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
             Text(math(q.stem), style = MaterialTheme.typography.titleLarge)
             val current = drafts[q.idx] ?: q.response
@@ -316,21 +324,20 @@ fun ExamScreen(nav: NavHostController, examId: Long) {
                     }
                 }
                 "numeric" -> {
-                    OutlinedTextField(current, { save(it.take(40)) }, label = { Text("Final answer" + if (q.unit.isNotBlank()) " (${q.unit})" else "") },
+                    OutlinedTextField(current, { save(it.take(40)) }, label = { Text(if (q.unit.isNotBlank()) stringResource(R.string.ex_final_answer_unit, q.unit) else stringResource(R.string.ex_final_answer)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true, modifier = Modifier.fillMaxWidth())
-                    Text("Tip: work it out on paper. You can attach a photo of your working for feedback after the exam.",
+                    Text(stringResource(R.string.ex_numeric_tip),
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 else -> {
-                    OutlinedTextField(current, { save(it.take(3000)) }, label = { Text(if (q.type == "graph") "Notes about your sketch (optional)" else "Your answer") },
+                    OutlinedTextField(current, { save(it.take(3000)) }, label = { Text(stringResource(if (q.type == "graph") R.string.ex_sketch_notes else R.string.ex_your_answer)) },
                         minLines = if (q.type == "graph") 2 else 4, modifier = Modifier.fillMaxWidth())
                     if (q.type == "graph" || q.type == "short") {
-                        Text(if (q.type == "graph") "Draw the graph on paper, then photograph it. The AI checks shape, intercepts, asymptotes and labels."
-                        else "Or photograph your handwritten answer.", style = MaterialTheme.typography.bodySmall)
+                        Text(stringResource(if (q.type == "graph") R.string.ex_graph_hint else R.string.ex_photo_hint), style = MaterialTheme.typography.bodySmall)
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(onClick = { camera.launch(tmpUri) }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Take photo") }
+                            Button(onClick = { camera.launch(FileProvider.getUriForFile(ctx, ctx.packageName + ".files", tmpFile)) }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.ex_take_photo)) }
                             OutlinedButton(onClick = { gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
-                                modifier = Modifier.heightIn(min = 48.dp)) { Text("From gallery") }
+                                modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.ex_from_gallery)) }
                         }
                         if (q.imagePath.isNotBlank()) Thumbnail(q.imagePath, photoVersion)
                     }
@@ -341,9 +348,10 @@ fun ExamScreen(nav: NavHostController, examId: Long) {
         Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             items.forEach { it ->
                 val done = (drafts[it.idx] ?: it.response).isNotBlank() || it.imagePath.isNotBlank()
+                val qDesc = if (done) stringResource(R.string.ex_q_desc_answered, it.idx + 1) else stringResource(R.string.ex_q_desc, it.idx + 1)
                 Surface(shape = CircleShape, onClick = { idx = it.idx },
                     color = when { it.idx == idx -> MaterialTheme.colorScheme.primary; done -> MaterialTheme.colorScheme.primaryContainer; else -> MaterialTheme.colorScheme.surfaceVariant },
-                    modifier = Modifier.size(40.dp).semantics { contentDescription = "Question ${it.idx + 1}" + if (done) ", answered" else "" }) {
+                    modifier = Modifier.size(40.dp).semantics { contentDescription = qDesc }) {
                     Box(contentAlignment = Alignment.Center) {
                         Text("${it.idx + 1}", style = MaterialTheme.typography.labelMedium,
                             color = if (it.idx == idx) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
@@ -352,19 +360,19 @@ fun ExamScreen(nav: NavHostController, examId: Long) {
             }
         }
         Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            OutlinedButton(onClick = { idx-- }, enabled = idx > 0, modifier = Modifier.weight(1f).heightIn(min = 52.dp)) { Text("Previous") }
-            if (idx < items.lastIndex) Button(onClick = { idx++ }, modifier = Modifier.weight(1f).heightIn(min = 52.dp)) { Text("Next") }
-            else Button(onClick = { confirm = true }, modifier = Modifier.weight(1f).heightIn(min = 52.dp)) { Text("Finish") }
+            OutlinedButton(onClick = { idx-- }, enabled = idx > 0, modifier = Modifier.weight(1f).heightIn(min = 52.dp)) { Text(stringResource(R.string.ex_prev)) }
+            if (idx < items.lastIndex) Button(onClick = { idx++ }, modifier = Modifier.weight(1f).heightIn(min = 52.dp)) { Text(stringResource(R.string.ex_next)) }
+            else Button(onClick = { confirm = true }, modifier = Modifier.weight(1f).heightIn(min = 52.dp)) { Text(stringResource(R.string.ex_finish)) }
         }
     }
-    if (submit?.running == true) AlertDialog(onDismissRequest = {}, confirmButton = {}, title = { Text("Grading…") },
-        text = { Busy("Checking answers. Written work and graphs are graded by the AI.") })
+    if (submit?.running == true) AlertDialog(onDismissRequest = {}, confirmButton = {}, title = { Text(stringResource(R.string.ex_grading)) },
+        text = { Busy(stringResource(R.string.ex_grading_body)) })
     if (confirm) AlertDialog(
         onDismissRequest = { confirm = false },
-        title = { Text("Finish exam?") },
-        text = { Text("You answered $answered of ${items.size}. You can also leave and continue later from Exams.") },
-        confirmButton = { TextButton(onClick = { confirm = false; app.repo.run("submit:$examId", "submit") { app.repo.submit(examId) } }) { Text("Submit") } },
-        dismissButton = { TextButton(onClick = { confirm = false; nav.popBackStack() }) { Text("Continue later") } },
+        title = { Text(stringResource(R.string.ex_finish_title)) },
+        text = { Text(stringResource(R.string.ex_finish_body, answered, items.size)) },
+        confirmButton = { TextButton(onClick = { confirm = false; app.repo.run("submit:$examId", "submit") { app.repo.submit(examId) } }) { Text(stringResource(R.string.ex_submit)) } },
+        dismissButton = { TextButton(onClick = { confirm = false; nav.popBackStack() }) { Text(stringResource(R.string.ex_later)) } },
     )
 }
 
@@ -373,7 +381,7 @@ private fun Thumbnail(path: String, version: Int) {
     val bmp = remember(path, version) {
         runCatching { BitmapFactory.decodeFile(path, BitmapFactory.Options().apply { inSampleSize = 4 })?.asImageBitmap() }.getOrNull()
     }
-    bmp?.let { Image(it, contentDescription = "Photo of your answer", contentScale = ContentScale.Fit, modifier = Modifier.fillMaxWidth().height(220.dp)) }
+    bmp?.let { Image(it, contentDescription = stringResource(R.string.ex_photo_desc), contentScale = ContentScale.Fit, modifier = Modifier.fillMaxWidth().height(220.dp)) }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -388,30 +396,30 @@ fun ResultScreen(nav: NavHostController, examId: Long) {
 
     LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         item {
-            TopAppBar(title = { Text("Result") },
-                navigationIcon = { IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+            TopAppBar(title = { Text(stringResource(R.string.res_title)) },
+                navigationIcon = { IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) } },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background))
             TCard {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     ScoreRing((e.score / e.maxScore.coerceAtLeast(1.0)).toFloat(), "${pct(e.score, e.maxScore)}%")
                     Spacer(Modifier.width(16.dp))
                     Column {
-                        Text(e.title, style = MaterialTheme.typography.titleMedium)
-                        Text("%.1f / %.0f marks".format(e.score, e.maxScore), style = MaterialTheme.typography.bodyLarge)
-                        Text(verdict(e.score / e.maxScore.coerceAtLeast(1.0)), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(if (e.mockId != null) stringResource(R.string.paper_title, subjectName(e.subject)) else e.title, style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.res_marks, "%.1f".format(e.score), "%.0f".format(e.maxScore)), style = MaterialTheme.typography.bodyLarge)
+                        Text(stringResource(verdict(e.score / e.maxScore.coerceAtLeast(1.0))), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
-            if (job?.running == true) Busy("Grading written answers…")
+            if (job?.running == true) Busy(stringResource(R.string.res_grading_written))
             if (ungraded > 0 && job?.running != true) {
-                ErrorText("$ungraded answer(s) still need AI grading (needs internet).")
-                Button(onClick = { app.repo.run("submit:$examId", "submit") { app.repo.retryGrading(examId) } }, modifier = Modifier.padding(top = 8.dp)) { Text("Retry grading") }
+                ErrorText(stringResource(R.string.res_ungraded, ungraded))
+                Button(onClick = { app.repo.run("submit:$examId", "submit") { app.repo.retryGrading(examId) } }, modifier = Modifier.padding(top = 8.dp)) { Text(stringResource(R.string.res_retry)) }
             }
             val mockId = e.mockId
             if (mockId != null) Button(onClick = { nav.navigate("mock/$mockId") { popUpTo("exams") } },
-                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(top = 8.dp)) { Text("Back to national mock") }
+                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(top = 8.dp)) { Text(stringResource(R.string.res_back_mock)) }
             else Button(onClick = { nav.navigate("newexam?subject=${e.subject}") }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(top = 8.dp)) {
-                Text("New exam – focus on my mistakes")
+                Text(stringResource(R.string.res_focus))
             }
         }
         items(items, key = { it.idx }) { ReviewItem(it) }
@@ -435,8 +443,8 @@ private fun ReviewItem(it: ItemWithQuestion) {
         }
         if (open) Column(Modifier.padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             if (it.type == "mcq") options(it).forEachIndexed { i, o -> Text(math("${LETTERS[i]}. $o"), style = MaterialTheme.typography.bodyMedium) }
-            Text(math("Your answer: " + it.response.ifBlank { if (it.imagePath.isNotBlank()) "(photo)" else "—" }), style = MaterialTheme.typography.bodyMedium)
-            Text(math("Correct: ${it.answer}${if (it.unit.isNotBlank() && it.type == "numeric") " ${it.unit}" else ""}"), style = MaterialTheme.typography.titleSmall,
+            Text(math(stringResource(R.string.res_your_answer, it.response.ifBlank { if (it.imagePath.isNotBlank()) stringResource(R.string.res_photo) else "—" })), style = MaterialTheme.typography.bodyMedium)
+            Text(math(stringResource(R.string.res_correct, it.answer + if (it.unit.isNotBlank() && it.type == "numeric") " ${it.unit}" else "")), style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary)
             if (it.feedback.isNotBlank()) Text(math(it.feedback), style = MaterialTheme.typography.bodyMedium)
             if (it.explanation.isNotBlank()) Text(math(it.explanation), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -450,8 +458,8 @@ private fun options(q: ItemWithQuestion): List<String> =
 private fun pct(score: Double, max: Double) = if (max <= 0) 0 else (score / max * 100).toInt()
 
 private fun verdict(f: Double) = when {
-    f >= 0.85 -> "Excellent – university-ready on this material."
-    f >= 0.65 -> "Good. Review the misses below, then go harder."
-    f >= 0.5 -> "Passing level (50%). Push the weak topics."
-    else -> "Below the 50% pass mark. Re-read the explanations and retry."
+    f >= 0.85 -> R.string.verdict_excellent
+    f >= 0.65 -> R.string.verdict_good
+    f >= 0.5 -> R.string.verdict_pass
+    else -> R.string.verdict_fail
 }

@@ -2,6 +2,8 @@ package et.tibeb.examprep.data
 
 import android.content.Context
 import android.net.Uri
+import et.tibeb.examprep.R
+import et.tibeb.examprep.ui.subjectRes
 import et.tibeb.examprep.net.Api
 import et.tibeb.examprep.net.ApiQuestion
 import et.tibeb.examprep.net.ExamReq
@@ -37,7 +39,8 @@ data class ExamConfig(
     val types: List<String>, val useAi: Boolean,
 )
 
-class Repository(private val ctx: Context, private val db: AppDb, private val api: Api) {
+class Repository(private val ctx: Context, private val db: AppDb, private val api: Api, private val str: (Int, Array<out Any>) -> String) {
+    private fun s(id: Int, vararg a: Any) = str(id, a)
     val dao = db.dao()
 
     /** Jobs run in an app-wide scope so a rotation or screen change never cancels an AI request. */
@@ -58,14 +61,16 @@ class Repository(private val ctx: Context, private val db: AppDb, private val ap
 
     fun clearJob(key: String) = _jobs.update { it - key }
 
-    private fun friendly(t: Throwable) = t.message ?: "Something went wrong"
+    private fun subjectLabel(subject: String) = subjectRes(subject)?.let { s(it) } ?: subject
+
+    private fun friendly(t: Throwable) = t.message ?: s(R.string.err_generic)
 
     // ---------- Library ----------
 
     suspend fun importDocument(uri: Uri, mime: String, title: String, subject: String, grade: Int, docType: String): Long {
         val isImage = mime.startsWith("image/")
         val size = ctx.sizeOf(uri)
-        if (!isImage && size > MAX_UPLOAD_BYTES) error("File is larger than 20 MB. Split the book into units (e.g. one PDF per unit).")
+        if (!isImage && size > MAX_UPLOAD_BYTES) error(s(R.string.err_too_big))
         val bytes = if (isImage) ctx.compressedJpeg(uri, maxSide = 2000) else ctx.readBytes(uri)
         val sendMime = if (isImage) "image/jpeg" else "application/pdf"
         val doc = Document(title = title.take(200), subject = subject, grade = grade, docType = docType)
@@ -119,7 +124,7 @@ class Repository(private val ctx: Context, private val db: AppDb, private val ap
             Triple(r.title, r.minutes, r.questions.map { it.toEntity(c.subject, c.grade, "ai", null) })
         } else {
             val bank = dao.randomPast(c.subject, c.types, c.count)
-            if (bank.isEmpty()) error("No saved past-exam questions for ${c.subject} yet. Upload an old exam first, or use AI.")
+            if (bank.isEmpty()) error(s(R.string.err_no_bank, subjectLabel(c.subject)))
             Triple("${c.subject} past-exam practice", (bank.size * 1.2).toInt().coerceAtLeast(5), bank)
         }
         val ids = if (c.useAi) dao.insertQuestions(questions) else questions.map { it.id }
@@ -145,7 +150,7 @@ class Repository(private val ctx: Context, private val db: AppDb, private val ap
                 .let { qs -> qs.zip(dao.insertQuestions(qs)) { q, id -> q.copy(id = id) } }
         } else {
             dao.randomPast(subject, listOf("mcq"), mock.questionsPerPaper).also {
-                if (it.size < 10) error("Only ${it.size} saved $subject multiple-choice questions. Upload more past papers, or create the mock with AI.")
+                if (it.size < 10) error(s(R.string.err_mock_bank, it.size, subjectLabel(subject)))
             }
         }
         return mockLock.withLock { dao.mockPaper(mockId, subject)?.id ?: insertPaper(mockId, subject, questions) }
@@ -196,19 +201,19 @@ class Repository(private val ctx: Context, private val db: AppDb, private val ap
                     val tol = if (it.tolerance > 0) it.tolerance else abs(it.numericAnswer) * 0.01 + 1e-9
                     item.copy(earned = if (v != null && abs(v - it.numericAnswer) <= tol) it.marks.toDouble() else 0.0, graded = true)
                 }
-                else -> if (it.response.isBlank() && it.imagePath.isBlank()) item.copy(graded = true, feedback = "No answer given.")
+                else -> if (it.response.isBlank() && it.imagePath.isBlank()) item.copy(graded = true, feedback = s(R.string.err_no_answer))
                 else runCatching {
                     val img = it.imagePath.takeIf { p -> p.isNotBlank() }?.let { p -> File(p).readBytes().b64() }
                     val g = api.grade(GradeReq(it.subject, it.stem, it.answer, it.marks, it.response, img))
                     item.copy(earned = g.score, graded = true, feedback = (listOf(g.feedback) + g.mistakes.map { m -> "• $m" }).joinToString("\n"))
-                }.getOrElse { e -> aiFailures++; item.copy(feedback = "Not graded yet: ${friendly(e)}") }
+                }.getOrElse { e -> aiFailures++; item.copy(feedback = s(R.string.err_not_graded, friendly(e))) }
             }
             dao.update(graded)
         }
         val after = dao.items(examId).first()
         val exam = dao.examNow(examId)!!
         dao.update(exam.copy(finishedAt = System.currentTimeMillis(), score = after.sumOf { it.earned }))
-        if (aiFailures > 0) error("$aiFailures written answer(s) need the internet to be graded. Open the result and tap Retry grading.")
+        if (aiFailures > 0) error(s(R.string.err_grading_offline, aiFailures))
         return examId
     }
 

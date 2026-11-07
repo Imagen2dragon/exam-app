@@ -79,7 +79,7 @@ fun ScoreRing(fraction: Float, label: String, size: Dp = 120.dp, stroke: Dp = 12
         fraction >= 0.5f -> MaterialTheme.colorScheme.secondary
         else -> MaterialTheme.colorScheme.error
     }
-    Box(Modifier.size(size).semantics { contentDescription = "Score $label" }, contentAlignment = Alignment.Center) {
+    Box(Modifier.size(size).semantics { contentDescription = label }, contentAlignment = Alignment.Center) {
         Canvas(Modifier.size(size)) {
             val s = Stroke(stroke.toPx(), cap = StrokeCap.Round)
             drawArc(track, -90f, 360f, false, style = s)
@@ -101,7 +101,7 @@ fun StatPill(value: String, label: String, modifier: Modifier = Modifier) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun <T> ChoiceChips(options: List<T>, selected: Set<T>, label: (T) -> String, onToggle: (T) -> Unit) {
+fun <T> ChoiceChips(options: List<T>, selected: Set<T>, label: @Composable (T) -> String, onToggle: (T) -> Unit) {
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         options.forEach { o -> FilterChip(selected = o in selected, onClick = { onToggle(o) }, label = { Text(label(o)) }) }
     }

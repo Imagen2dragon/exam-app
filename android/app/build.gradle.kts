@@ -15,8 +15,8 @@ android {
         applicationId = "et.tibeb.examprep"
         minSdk = 24          // Android 7.0+: covers almost every phone still in use in Ethiopia
         targetSdk = 36
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.3.0"
         vectorDrawables.useSupportLibrary = true
     }
 

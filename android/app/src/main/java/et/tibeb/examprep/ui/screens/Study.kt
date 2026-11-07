@@ -1,5 +1,10 @@
 package et.tibeb.examprep.ui.screens
 
+import androidx.compose.ui.res.stringResource
+import et.tibeb.examprep.R
+import et.tibeb.examprep.ui.NOTE_STYLE
+import et.tibeb.examprep.ui.label
+import et.tibeb.examprep.ui.subjectName
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -67,7 +72,6 @@ import et.tibeb.examprep.ui.SubjectDot
 import et.tibeb.examprep.ui.TCard
 import kotlinx.coroutines.launch
 
-private val NOTE_STYLES = listOf("summary" to "Summary", "detailed" to "Detailed", "formula_sheet" to "Formula sheet", "cheat_sheet" to "Cheat sheet")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -93,50 +97,50 @@ fun StudyScreen(nav: NavHostController) {
     LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), contentPadding = PaddingValues(bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)) {
         item {
-            Text("Study", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 20.dp))
+            Text(stringResource(R.string.tab_study), style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 20.dp))
             Spacer(Modifier.height(12.dp))
             TCard {
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                    listOf("Notes", "Flashcards").forEachIndexed { i, l ->
+                    listOf(stringResource(R.string.study_notes), stringResource(R.string.study_flashcards)).forEachIndexed { i, l ->
                         SegmentedButton(selected = mode == i, onClick = { mode = i }, shape = SegmentedButtonDefaults.itemShape(i, 2)) { Text(l) }
                     }
                 }
                 Spacer(Modifier.height(12.dp))
-                ChoiceChips(SUBJECTS, setOf(subject), { it }) { subject = it; topic = "" }
+                ChoiceChips(SUBJECTS, setOf(subject), { subjectName(it) }) { subject = it; topic = "" }
                 Spacer(Modifier.height(8.dp))
-                OutlinedTextField(topic, { topic = it.take(200) }, label = { Text("Topic (e.g. Logarithmic functions)") },
+                OutlinedTextField(topic, { topic = it.take(200) }, label = { Text(stringResource(R.string.study_topic_hint)) },
                     singleLine = true, modifier = Modifier.fillMaxWidth())
                 if (topics.isNotEmpty() && topic.isBlank()) {
-                    Text("From your books", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 8.dp, bottom = 4.dp))
+                    Text(stringResource(R.string.study_from_books), style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 8.dp, bottom = 4.dp))
                     ChoiceChips(topics.take(10), emptySet(), { it }) { topic = it }
                 }
                 Spacer(Modifier.height(8.dp))
                 if (mode == 0) {
-                    ChoiceChips(NOTE_STYLES.map { it.first }, setOf(style), { k -> NOTE_STYLES.first { it.first == k }.second }) { style = it }
+                    ChoiceChips(NOTE_STYLE.keys.toList(), setOf(style), { label(NOTE_STYLE, it) }) { style = it }
                     Spacer(Modifier.height(8.dp))
-                    if (notesJob?.running == true) Busy("Writing your notes…")
+                    if (notesJob?.running == true) Busy(stringResource(R.string.study_writing_notes))
                     else Button(enabled = topic.isNotBlank(), modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), onClick = {
                         app.repo.run("notes", topic) { app.repo.makeNotes(subject, topic, settings.grade, style, settings.language) }
-                    }) { Text("Create notes") }
+                    }) { Text(stringResource(R.string.study_create_notes)) }
                     notesJob?.error?.let { ErrorText(it) }
                 } else {
-                    Text("${count.toInt()} cards", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.study_n_cards, count.toInt()), style = MaterialTheme.typography.labelLarge)
                     Slider(count, { count = it }, valueRange = 5f..40f, steps = 6)
-                    if (cardsJob?.running == true) Busy("Making flashcards…")
+                    if (cardsJob?.running == true) Busy(stringResource(R.string.study_making_cards))
                     else Button(enabled = topic.isNotBlank(), modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), onClick = {
                         app.repo.run("cards", topic) { app.repo.makeFlashcards(subject, topic, settings.grade, count.toInt()) }
-                    }) { Text("Create flashcards") }
+                    }) { Text(stringResource(R.string.study_create_cards)) }
                     cardsJob?.error?.let { ErrorText(it) }
-                    cardsJob?.resultId?.let { Text("Added $it cards to your deck.", color = MaterialTheme.colorScheme.primary) }
+                    cardsJob?.resultId?.let { Text(stringResource(R.string.study_added_cards, it.toInt()), color = MaterialTheme.colorScheme.primary) }
                 }
             }
             Spacer(Modifier.height(10.dp))
             FilledTonalButton(onClick = { nav.navigate("review") }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
-                Text("Review flashcards ($cardCount in deck)")
+                Text(stringResource(R.string.study_review_button, cardCount))
             }
-            SectionTitle("My notes")
+            SectionTitle(stringResource(R.string.study_my_notes))
         }
-        if (notes.isEmpty()) item { EmptyState("No notes yet", "Pick a subject and topic above to generate notes from your books.") }
+        if (notes.isEmpty()) item { EmptyState(stringResource(R.string.study_notes_empty_title), stringResource(R.string.study_notes_empty_body)) }
         items(notes, key = { it.id }) { n ->
             TCard(onClick = { nav.navigate("note/${n.id}") }) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -144,7 +148,7 @@ fun StudyScreen(nav: NavHostController) {
                     Spacer(Modifier.width(10.dp))
                     Column {
                         Text(n.title, style = MaterialTheme.typography.titleMedium)
-                        Text("${n.subject} · ${n.topic}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("${subjectName(n.subject)} · ${n.topic}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -161,8 +165,8 @@ fun NoteScreen(nav: NavHostController, id: Long) {
     Column(Modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text(note?.title ?: "", maxLines = 1) },
-            navigationIcon = { IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
-            actions = { IconButton(onClick = { scope.launch { app.repo.dao.deleteNote(id); nav.popBackStack() } }) { Icon(Icons.Filled.Delete, "Delete note") } },
+            navigationIcon = { IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) } },
+            actions = { IconButton(onClick = { scope.launch { app.repo.dao.deleteNote(id); nav.popBackStack() } }) { Icon(Icons.Filled.Delete, stringResource(R.string.note_delete)) } },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
         )
         note?.let { Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp)) { Markdown(it.markdown) } }
@@ -182,34 +186,34 @@ fun ReviewScreen(nav: NavHostController) {
 
     Column(Modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text("Review · $done done") },
-            navigationIcon = { IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+            title = { Text(stringResource(R.string.review_title, done)) },
+            navigationIcon = { IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) } },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
         )
         if (due != null && card == null) {
-            EmptyState("All caught up 🎉", "No cards are due. Make more flashcards in Study, or come back tomorrow.")
+            EmptyState(stringResource(R.string.review_done_title), stringResource(R.string.review_done_body))
             return@Column
         }
         if (card == null) return@Column
         Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.SpaceBetween) {
             TCard(Modifier.weight(1f), onClick = { flipped = !flipped }) {
-                Text("${card.subject} · ${card.topic}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("${subjectName(card.subject)} · ${card.topic}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Box(Modifier.fillMaxSize().semantics { liveRegion = LiveRegionMode.Polite }, contentAlignment = Alignment.Center) {
                     AnimatedContent(flipped, label = "flip") { f ->
                         Text(math(if (f) card.back else card.front), style = if (f) MaterialTheme.typography.titleLarge else MaterialTheme.typography.headlineSmall,
                             textAlign = TextAlign.Center)
                     }
                 }
-                if (!flipped) Text("Tap to show answer", style = MaterialTheme.typography.labelMedium, modifier = Modifier.align(Alignment.CenterHorizontally))
+                if (!flipped) Text(stringResource(R.string.review_tap), style = MaterialTheme.typography.labelMedium, modifier = Modifier.align(Alignment.CenterHorizontally))
             }
             Spacer(Modifier.height(16.dp))
             if (flipped) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf(0 to "Again", 3 to "Hard", 4 to "Good", 5 to "Easy").forEach { (g, l) ->
+                listOf(0 to stringResource(R.string.review_again), 3 to stringResource(R.string.review_hard), 4 to stringResource(R.string.review_good), 5 to stringResource(R.string.review_easy)).forEach { (g, l) ->
                     val action = { scope.launch { app.repo.review(card, g); flipped = false; done++ }; Unit }
                     if (g == 4) Button(onClick = action, modifier = Modifier.weight(1f).heightIn(min = 52.dp)) { Text(l) }
                     else OutlinedButton(onClick = action, modifier = Modifier.weight(1f).heightIn(min = 52.dp)) { Text(l) }
                 }
-            } else Button(onClick = { flipped = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("Show answer") }
+            } else Button(onClick = { flipped = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text(stringResource(R.string.review_show)) }
         }
     }
 }

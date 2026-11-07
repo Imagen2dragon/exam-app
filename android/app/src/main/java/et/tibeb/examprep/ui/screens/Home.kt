@@ -1,5 +1,8 @@
 package et.tibeb.examprep.ui.screens
 
+import androidx.compose.ui.res.stringResource
+import et.tibeb.examprep.R
+import et.tibeb.examprep.ui.subjectName
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -56,16 +59,16 @@ fun HomeScreen(nav: NavHostController) {
         item {
             Row(Modifier.fillMaxWidth().padding(top = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("Selam 👋", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("Let's get you to 600.", style = MaterialTheme.typography.headlineMedium)
+                    Text(stringResource(R.string.home_greeting), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.home_title), style = MaterialTheme.typography.headlineMedium)
                 }
-                IconButton(onClick = { nav.navigate("settings") }) { Icon(Icons.Filled.Settings, contentDescription = "Settings") }
+                IconButton(onClick = { nav.navigate("settings") }) { Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.settings)) }
             }
             if (!settings.hasToken || settings.serverUrl.isBlank()) {
                 Spacer(Modifier.height(12.dp))
                 TCard(onClick = { nav.navigate("settings") }, container = MaterialTheme.colorScheme.secondaryContainer) {
-                    Text("Connect the AI", style = MaterialTheme.typography.titleMedium)
-                    Text("Add the server address and your device token to unlock AI exams, notes and grading. Flashcard review and saved past exams work without it.",
+                    Text(stringResource(R.string.home_connect_title), style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.home_connect_body),
                         style = MaterialTheme.typography.bodyMedium)
                 }
             }
@@ -73,32 +76,32 @@ fun HomeScreen(nav: NavHostController) {
         item {
             Spacer(Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StatPill(avg?.let { "${(it * 100).toInt()}%" } ?: "–", "Avg score", Modifier.weight(1f))
-                StatPill("${finished.size}", "Exams done", Modifier.weight(1f))
-                StatPill("$due", "Cards due", Modifier.weight(1f))
+                StatPill(avg?.let { "${(it * 100).toInt()}%" } ?: "–", stringResource(R.string.home_avg), Modifier.weight(1f))
+                StatPill("${finished.size}", stringResource(R.string.home_exams_done), Modifier.weight(1f))
+                StatPill("$due", stringResource(R.string.home_cards_due), Modifier.weight(1f))
             }
         }
         item {
-            SectionTitle("Today")
+            SectionTitle(stringResource(R.string.home_today))
             TCard(onClick = { nav.navigate("newexam") }, container = MaterialTheme.colorScheme.primary) {
-                Text("Create an exam for me", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onPrimary)
-                Text("Hard, exam-style questions from your own books and past papers.", color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f))
+                Text(stringResource(R.string.home_create_exam), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onPrimary)
+                Text(stringResource(R.string.home_create_exam_body), color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f))
             }
             Spacer(Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 TCard(Modifier.weight(1f), onClick = { nav.navigate("review") }) {
-                    Text("Review cards", style = MaterialTheme.typography.titleMedium)
-                    Text(if (due > 0) "$due waiting" else "All caught up", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.home_review_cards), style = MaterialTheme.typography.titleMedium)
+                    Text(if (due > 0) stringResource(R.string.home_waiting, due) else stringResource(R.string.home_caught_up), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 TCard(Modifier.weight(1f), onClick = { nav.tab("study") }) {
-                    Text("Make notes", style = MaterialTheme.typography.titleMedium)
-                    Text("From any topic", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.home_make_notes), style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.home_any_topic), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
         val weak = stats.filter { it.attempted >= 2 }.sortedBy { it.accuracy }.take(4)
         if (weak.isNotEmpty()) item {
-            SectionTitle("Needs work")
+            SectionTitle(stringResource(R.string.home_needs_work))
             TCard {
                 weak.forEach { s ->
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 6.dp)) {
@@ -115,7 +118,7 @@ fun HomeScreen(nav: NavHostController) {
             }
         }
         item {
-            SectionTitle(if (settings.stream == "social") "Social science stream" else "Natural science stream")
+            SectionTitle(stringResource(if (settings.stream == "social") R.string.home_stream_social else R.string.home_stream_natural))
             val dark = isSystemInDarkTheme()
             LazyVerticalGrid(GridCells.Fixed(2), Modifier.height(((subjects.size + 1) / 2 * 92).dp), userScrollEnabled = false,
                 horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -123,7 +126,7 @@ fun HomeScreen(nav: NavHostController) {
                     TCard(onClick = { nav.navigate("newexam?subject=$s") }, container = subjectColor(s, dark).copy(alpha = 0.14f)) {
                         SubjectDot(s, 14.dp)
                         Spacer(Modifier.height(8.dp))
-                        Text(s, style = MaterialTheme.typography.titleSmall, maxLines = 1)
+                        Text(subjectName(s), style = MaterialTheme.typography.titleSmall, maxLines = 1)
                     }
                 }
             }

@@ -25,10 +25,12 @@ import org.robolectric.annotation.GraphicsMode
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [35], qualifiers = "w393dp-h852dp-xxhdpi")
-class ScreenshotTest {
+open class ScreenshotTest {
+    open val dir = "../../docs/screenshots"
+    private fun str(id: Int) = rule.activity.getString(id)
     @get:Rule val rule = createAndroidComposeRule<MainActivity>()
 
-    private fun shot(name: String) { rule.waitForIdle(); Thread.sleep(400); rule.waitForIdle(); rule.onRoot().captureRoboImage("../../docs/screenshots/$name.png") }
+    private fun shot(name: String) { rule.waitForIdle(); Thread.sleep(400); rule.waitForIdle(); rule.onRoot().captureRoboImage("$dir/$name.png") }
 
     private fun seed(): Long = runBlocking {
         val app = rule.activity.application as TibebApp
@@ -76,15 +78,22 @@ class ScreenshotTest {
     @Test fun screens() {
         val examId = seed()
         shot("01_home")
-        rule.onNodeWithText("Library").performClick(); shot("02_library")
-        rule.onNodeWithText("Study").performClick(); shot("03_study")
-        rule.onNodeWithText("Exams").performClick(); shot("04_exams")
+        rule.onNodeWithText(str(R.string.tab_library)).performClick(); shot("02_library")
+        rule.onNodeWithText(str(R.string.tab_study)).performClick(); shot("03_study")
+        rule.onNodeWithText(str(R.string.tab_exams)).performClick(); shot("04_exams")
         rule.runOnUiThread { rule.activity.navForTest?.navigate("newexam?subject=Mathematics") }; shot("05_new_exam")
         rule.runOnUiThread { rule.activity.navForTest?.navigate("exam/$examId") }; shot("06_question_mcq")
-        rule.onNodeWithText("Next").performClick(); shot("07_question_graph")
+        rule.onNodeWithText(str(R.string.ex_next)).performClick(); shot("07_question_graph")
         rule.runOnUiThread { rule.activity.navForTest?.navigate("result/${examId + 1}") }; shot("08_result")
         rule.runOnUiThread { rule.activity.navForTest?.navigate("review") }; shot("09_flashcard")
         rule.runOnUiThread { rule.activity.navForTest?.navigate("mocksetup") }; shot("10_mock_setup")
         rule.runOnUiThread { rule.activity.navForTest?.navigate("mock/$mockIdForTest") }; shot("11_mock_hub")
+        rule.runOnUiThread { rule.activity.navForTest?.navigate("settings") }; shot("12_settings")
     }
+}
+
+/** Same screens with the phone set to Amharic. */
+@Config(sdk = [35], qualifiers = "am-w393dp-h852dp-xxhdpi")
+class AmharicScreenshotTest : ScreenshotTest() {
+    override val dir = "../../docs/screenshots/am"
 }

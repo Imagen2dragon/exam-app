@@ -5,6 +5,7 @@ Android app plus a small backend. Upload textbooks, teacher guides and past nati
 - **Makes notes** (summary, detailed, formula sheet, cheat sheet), in English or Amharic
 - **Makes flashcards** with spaced repetition (SM-2)
 - **Full national mock**: all 6 papers of the stream, scored out of 600 against the 300 pass line
+- **Amharic or English interface**, with Ethiopian-calendar dates in Amharic
 - **Works offline** for review, notes and exams built from saved past papers
 
 Release APK: **1.5 MB**, Android 7.0+ (minSdk 24), one permission (INTERNET).

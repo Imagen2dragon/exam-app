@@ -196,7 +196,29 @@ class Repository(private val ctx: Context, private val db: AppDb, private val ap
         return r.cards.size.toLong()
     }
 
-    suspend fun review(card: Card, grade: Int) = dao.update(card.review(grade))
+    suspend fun review(card: Card, grade: Int) {
+        dao.update(card.review(grade))
+        recordActivity(reviews = 1)
+    }
+
+    // ---------- Study activity (for the streak and today's plan) ----------
+
+    private val activity = ctx.getSharedPreferences("activity", Context.MODE_PRIVATE)
+    private val _activityTick = MutableStateFlow(0)
+    /** Changes whenever study activity is recorded, so Home can refresh the plan and streak. */
+    val activityTick: StateFlow<Int> = _activityTick
+
+    private fun recordActivity(reviews: Int = 0) {
+        val today = Planner.startOfDay(System.currentTimeMillis())
+        val days = (activity.getStringSet("days", emptySet()).orEmpty() + today.toString())
+            .filter { (today - (it.toLongOrNull() ?: 0)) < 400L * 24 * 60 * 60 * 1000 }.toSet()
+        activity.edit().putStringSet("days", days)
+            .putInt("reviews_$today", activity.getInt("reviews_$today", 0) + reviews).apply()
+        _activityTick.update { it + 1 }
+    }
+
+    fun activeDays(): Set<Long> = activity.getStringSet("days", emptySet()).orEmpty().mapNotNull { it.toLongOrNull() }.toSet()
+    fun reviewsToday(): Int = activity.getInt("reviews_${Planner.startOfDay(System.currentTimeMillis())}", 0)
 
     // ---------- Exams ----------
 
@@ -302,6 +324,7 @@ class Repository(private val ctx: Context, private val db: AppDb, private val ap
         val exam = dao.examNow(examId)!!
         dao.update(exam.copy(finishedAt = System.currentTimeMillis(), score = after.sumOf { it.earned }))
         addMistakeCards(after)
+        recordActivity()
         if (aiFailures > 0) error(s(R.string.err_grading_offline, aiFailures))
         return examId
     }

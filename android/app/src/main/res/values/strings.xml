@@ -32,7 +32,6 @@
     <string name="home_connect_title">Connect the AI</string>
     <string name="home_connect_body">Add the server address and your device token to unlock AI exams, notes and grading. Flashcard review and saved past exams work without it.</string>
     <string name="home_avg">Avg score</string>
-    <string name="home_exams_done">Exams done</string>
     <string name="home_cards_due">Cards due</string>
     <string name="home_today">Today</string>
     <string name="home_create_exam">Create an exam for me</string>
@@ -266,12 +265,33 @@
     <string name="home_mistakes">Mistakes to fix</string>
     <string name="mistakes_exam_title">%1$s – mistakes retry</string>
     <string name="card_answer">Answer: %1$s</string>
+    <string name="plan_cards_done">Flashcards reviewed</string>
+    <string name="plan_exam">Practice exam: %1$s</string>
+    <string name="plan_mock">Full national mock this week</string>
+    <string name="plan_all_done">All done for today 🎉 Extra practice still counts.</string>
+    <string name="countdown_today">The national exam is today. Good luck! 🍀</string>
+    <string name="countdown_set">Set your exam date</string>
+    <string name="countdown_set_body">Get a countdown and a daily plan that gets more intense as the exam gets closer.</string>
+    <string name="home_streak">Day streak</string>
+    <string name="set_exam_date">National exam date</string>
+    <string name="set_exam_date_none">Not set</string>
+    <string name="set_change">Change</string>
+    <string name="set_clear">Clear</string>
+    <string name="ok">OK</string>
+    <plurals name="plan_cards">
+        <item quantity="one">Review %d flashcard</item>
+        <item quantity="other">Review %d flashcards</item>
+    </plurals>
+    <plurals name="plan_mistakes">
+        <item quantity="one">Fix %d mistake</item>
+        <item quantity="other">Fix %d mistakes</item>
+    </plurals>
     <plurals name="marks">
         <item quantity="one">%d mark</item>
         <item quantity="other">%d marks</item>
     </plurals>
-    <plurals name="mistakes_waiting">
-        <item quantity="one">%d question you got wrong is waiting. Retry it offline.</item>
-        <item quantity="other">%d questions you got wrong are waiting. Retry them offline.</item>
+    <plurals name="countdown_days">
+        <item quantity="one">%d day to the national exam</item>
+        <item quantity="other">%d days to the national exam</item>
     </plurals>
 </resources>

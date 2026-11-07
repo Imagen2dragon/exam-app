@@ -35,7 +35,12 @@ open class ScreenshotTest {
 
     private fun seed(): Long = runBlocking {
         val app = rule.activity.application as TibebApp
-        app.prefs.save(app.prefs.settings.value.copy(serverUrl = "https://tibeb.example.com"))
+        val day = 86_400_000L
+        app.prefs.save(app.prefs.settings.value.copy(serverUrl = "https://tibeb.example.com",
+            examDate = System.currentTimeMillis() + 243 * day))
+        val today = et.tibeb.examprep.data.Planner.startOfDay(System.currentTimeMillis())
+        app.getSharedPreferences("activity", 0).edit()
+            .putStringSet("days", (1..5).map { (et.tibeb.examprep.data.Planner.startOfDay(today - it * day + day / 2)).toString() }.toSet()).commit()
         val dao = app.repo.dao
         val doc = dao.insert(Document(title = "Grade 12 Mathematics Student Textbook – Unit 3", subject = "Mathematics", grade = 12,
             docType = "textbook", status = "ready", summary = "Introduction to limits and continuity: limits of sequences, limits of functions, continuity and the intermediate value theorem."))

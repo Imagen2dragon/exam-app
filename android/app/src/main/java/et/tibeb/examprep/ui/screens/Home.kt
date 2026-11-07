@@ -2,6 +2,7 @@ package et.tibeb.examprep.ui.screens
 
 import androidx.compose.ui.res.stringResource
 import et.tibeb.examprep.R
+import androidx.compose.ui.res.pluralStringResource
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.runtime.LaunchedEffect
@@ -56,6 +57,7 @@ fun HomeScreen(nav: NavHostController) {
     val due by dao.dueCount(now).collectAsState(0)
     val exams by dao.allExams().collectAsState(emptyList())
     val stats by dao.topicStats().collectAsState(emptyList())
+    val mistakes by dao.mistakes().collectAsState(emptyList())
     val subjects = if (settings.stream == "social") SOCIAL_STREAM else NATURAL_STREAM
     val finished = exams.filter { it.finishedAt > 0 && it.maxScore > 0 }
     val avg = if (finished.isEmpty()) null else finished.takeLast(10).map { it.score / it.maxScore }.average()
@@ -114,6 +116,15 @@ fun HomeScreen(nav: NavHostController) {
                     Text(stringResource(R.string.home_make_notes), style = MaterialTheme.typography.titleMedium)
                     Text(stringResource(R.string.home_any_topic), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+            }
+        }
+        if (mistakes.isNotEmpty()) item {
+            Spacer(Modifier.height(10.dp))
+            TCard(onClick = { nav.navigate("mistakes") }, container = MaterialTheme.colorScheme.errorContainer) {
+                Text(stringResource(R.string.home_mistakes) + " · ${mistakes.size}", style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onErrorContainer)
+                Text(pluralStringResource(R.plurals.mistakes_waiting, mistakes.size, mistakes.size), style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onErrorContainer)
             }
         }
         val weak = stats.filter { it.attempted >= 2 }.sortedBy { it.accuracy }.take(4)

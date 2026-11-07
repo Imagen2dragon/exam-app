@@ -257,8 +257,21 @@
     <string name="pages_upload">Upload chapter</string>
     <string name="pages_discard_title">Discard these photos?</string>
     <string name="pages_discard">Discard</string>
+    <string name="mistakes_title">Mistake notebook</string>
+    <string name="mistakes_intro">Every question you got wrong lands here and becomes a flashcard. Retry them until they leave the list: one fully correct answer removes a question.</string>
+    <string name="mistakes_empty_title">No mistakes to fix 🎉</string>
+    <string name="mistakes_empty_body">Finish an exam and any wrong answers will appear here.</string>
+    <string name="mistakes_retry">Retry (%1$d)</string>
+    <string name="mistakes_to_fix">%1$d to fix</string>
+    <string name="home_mistakes">Mistakes to fix</string>
+    <string name="mistakes_exam_title">%1$s – mistakes retry</string>
+    <string name="card_answer">Answer: %1$s</string>
     <plurals name="marks">
         <item quantity="one">%d mark</item>
         <item quantity="other">%d marks</item>
+    </plurals>
+    <plurals name="mistakes_waiting">
+        <item quantity="one">%d question you got wrong is waiting. Retry it offline.</item>
+        <item quantity="other">%d questions you got wrong are waiting. Retry them offline.</item>
     </plurals>
 </resources>

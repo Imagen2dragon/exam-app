@@ -288,5 +288,18 @@ S = {
  "pages_upload": ("Upload chapter", "ምዕራፉን ጫን"),
  "pages_discard_title": ("Discard these photos?", "እነዚህ ፎቶዎች ይጣሉ?"),
  "pages_discard": ("Discard", "ጣል"),
+ "mistakes_title": ("Mistake notebook", "የስህተት ማስታወሻ ደብተር"),
+ "mistakes_intro": ("Every question you got wrong lands here and becomes a flashcard. Retry them until they leave the list: one fully correct answer removes a question.", "የተሳሳቱት እያንዳንዱ ጥያቄ እዚህ ይመዘገባል፤ ፍላሽ ካርድም ይሆናል። ከዝርዝሩ እስኪወጡ ድረስ እንደገና ይሞክሯቸው፤ አንድ ሙሉ ትክክለኛ መልስ ጥያቄውን ያስወጣዋል።"),
+ "mistakes_empty_title": ("No mistakes to fix 🎉", "የሚታረም ስህተት የለም 🎉"),
+ "mistakes_empty_body": ("Finish an exam and any wrong answers will appear here.", "ፈተና ሲጨርሱ የተሳሳቱት መልሶች እዚህ ይታያሉ።"),
+ "mistakes_retry": ("Retry (%1$d)", "እንደገና ሞክር (%1$d)"),
+ "mistakes_to_fix": ("%1$d to fix", "%1$d የሚታረሙ"),
+ "home_mistakes": ("Mistakes to fix", "የሚታረሙ ስህተቶች"),
+ "mistakes_exam_title": ("%1$s – mistakes retry", "%1$s – የስህተቶች ድግግሞሽ"),
+ "card_answer": ("Answer: %1$s", "መልስ፦ %1$s"),
 }
-PLURALS = {"marks": (("%d mark", "%d marks"), ("%d ነጥብ", "%d ነጥብ"))}
+PLURALS = {
+    "marks": (("%d mark", "%d marks"), ("%d ነጥብ", "%d ነጥብ")),
+    "mistakes_waiting": (("%d question you got wrong is waiting. Retry it offline.", "%d questions you got wrong are waiting. Retry them offline."),
+                         ("የተሳሳቱት %d ጥያቄ ይጠብቃል። ያለ ኢንተርኔት እንደገና ይሞክሩት።", "የተሳሳቷቸው %d ጥያቄዎች ይጠብቃሉ። ያለ ኢንተርኔት እንደገና ይሞክሯቸው።")),
+}

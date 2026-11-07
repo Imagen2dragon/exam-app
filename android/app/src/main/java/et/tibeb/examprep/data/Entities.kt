@@ -73,7 +73,7 @@ data class Note(
 )
 
 /** Flashcard with SM-2 spaced-repetition state. */
-@Entity(indices = [Index("due")])
+@Entity(indices = [Index("due"), Index("questionId")])
 data class Card(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val subject: String,
@@ -84,6 +84,7 @@ data class Card(
     val intervalDays: Int = 0,
     val reps: Int = 0,
     val due: Long = System.currentTimeMillis(),
+    val questionId: Long? = null,   // set for cards made automatically from a wrong exam answer
 )
 
 @Entity(indices = [Index("mockId")])

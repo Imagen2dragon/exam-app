@@ -85,6 +85,7 @@ fun LibraryScreen() {
             if (docs.isEmpty()) item { EmptyState("Nothing here yet", "Tap Upload to add your first textbook or past exam (PDF or photo).") }
             items(docs, key = { it.id }) { d ->
                 val chunks by app.repo.dao.chunkCount(d.id).collectAsState(0)
+                val questions by app.repo.dao.questionCount(d.id).collectAsState(0)
                 TCard {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         SubjectDot(d.subject)
@@ -99,7 +100,9 @@ fun LibraryScreen() {
                     when (d.status) {
                         "processing" -> Busy("Processing…")
                         "failed" -> ErrorText(d.error.ifBlank { "Failed" })
-                        else -> Text("$chunks study sections saved. ${d.summary}", style = MaterialTheme.typography.bodyMedium, maxLines = 4,
+                        else -> Text(listOfNotNull(
+                            "$chunks study sections".takeIf { chunks > 0 }, "$questions exam questions".takeIf { questions > 0 },
+                        ).joinToString(" · ").ifBlank { "Saved" } + ". ${d.summary}", style = MaterialTheme.typography.bodyMedium, maxLines = 4,
                             modifier = Modifier.padding(top = 8.dp))
                     }
                 }

@@ -92,3 +92,26 @@ Android phone (1.4 MB APK, Android 7+)              Your server (small VPS)     
 19. A focus lock: screen pinning during an exam for self-discipline (the same idea as China's gaokao rule).
 
 **Content note:** Ministry of Education textbooks are distributed free, and using past papers for personal study is fine. Don't redistribute other apps' question banks.
+
+## 6. Hugging Face models – should Tibeb use them?
+
+**Caveat:** huggingface.co is blocked from the build environment, so the model cards could not be opened directly. The figures below come from search results and the linked papers. Verify them on the model page before integrating anything.
+
+| Model (Hugging Face) | What it is | Fit for Tibeb |
+|---|---|---|
+| **rasyosef/embedding-amharic-base** (RoBERTa, ~110M) and a ~42M "medium" variant | Amharic text-embedding models (ACL 2025 Findings). Reported +17.6% MRR@10 over the best multilingual baseline (Arctic Embed 2.0, 568M) on Amharic retrieval, with the medium model "13× smaller" yet competitive. [paper](https://aclanthology.org/2025.findings-acl.543.pdf), [code](https://github.com/kidist-amde/amharic-ir-benchmarks) | ✅ **Best candidate.** Smarter on-device search when he writes topics or notes in Amharic. Make it an optional download, since it adds tens of MB. |
+| **Qwen/Qwen3-1.7B** (Apache-2.0) | Small multilingual model with an optional "thinking" mode; often named the best small all-rounder for phones ([guide](https://www.llmtrust.com/best/small-llms)) | 🟡 Optional **offline tutor** ("explain this question") on phones with ≥6 GB RAM. About a 1 GB download. Not good enough to write or grade national-exam papers. |
+| **Gemma 3 1B** | The only small model reported to fit 4 GB phones; limited reasoning ([guide](https://www.promptquorum.com/power-local-llm/mobile-llm-models-phi4-gemma-smollm)) | 🟡 Same role as Qwen3 on low-RAM phones. Weaker at maths. |
+| **rasyosef Llama 3.2 Amharic** (180M–1B) | Llama 3.2 trained on Amharic text ([collection](https://huggingface.co/collections/rasyosef/llama-32-amharic)) | 🔴 Interesting for Amharic chat. No exam-level reasoning. |
+| **fidelizML/AmhariXLM-0.5B** | 70% English / 30% Amharic. Self-reported 45–80% on single-step arithmetic and 37–55% GSM8K ([card](https://huggingface.co/fidelizML/AmhariXLM-0.5B)) | 🔴 Too weak for hard maths questions. |
+| **EthioNLP/Amharic-LLaMA** | LLaMA-2 + LoRA on Amharic tasks. The card notes verbose or imprecise output ([card](https://huggingface.co/EthioNLP/Amharic-LLAMA-all-data)) | 🔴 Older; not for exams. |
+| **b1n1yam/gemma-2-27b-amharic-cpt** | 27B Gemma 2, continued pre-training on Amharic. No published benchmarks ([models](https://huggingface.co/models?other=amharic&p=0&sort=trending)) | 🔴 Too big for phones. Self-hosting needs a GPU, which costs more than the API for one student. |
+| Ethiopian exam datasets | Searched; **none found** on Hugging Face | Tibeb's own uploaded past papers are the dataset. |
+
+**Recommendation:** keep Claude for writing exams, grading photos and making notes; the quality on hard national-exam questions matters most. Use Hugging Face models only where they add something Claude can't: (1) the **Amharic embedding model** for better offline search, and (2) an **optional offline tutor** (Qwen3-1.7B or Gemma 3 1B) for students with no data. Both are optional downloads, so the base app stays 1.5 MB. To build either, `huggingface.co` must be added to the environment's allowed hosts.
+
+## 7. Step 2 progress
+- ✅ **Full national mock**: 6 papers of the stream, each out of 100, total out of 600, with the 300 pass line, a projected score and the weakest paper. Lengths 30, 60 or 100 questions per paper, with estimated per-subject timings. Papers are AI-planned across grades 9–12 (new curriculum), or built offline from saved past papers. Papers are generated when started, or all at once with "Prepare all" so the mock can be sat offline.
+- ✅ **Math display**: simple LaTeX (`x^2`, `\frac{}{}`, `\sqrt{}`, `\lim_{x\to3}`, Greek letters, `H_2O`) shows as real superscripts, subscripts and symbols, with no library.
+- ✅ Database migration v1→v2 (keeps all existing data), with a test.
+- ⏳ Next in Step 2: Amharic interface, multi-photo chapter upload, background uploads (WorkManager).

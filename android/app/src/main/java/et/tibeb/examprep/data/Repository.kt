@@ -8,6 +8,7 @@ import et.tibeb.examprep.net.ExamReq
 import et.tibeb.examprep.net.ExtractReq
 import et.tibeb.examprep.net.FlashReq
 import et.tibeb.examprep.net.GradeReq
+import et.tibeb.examprep.net.MockPaperReq
 import et.tibeb.examprep.net.NotesReq
 import et.tibeb.examprep.net.json
 import et.tibeb.examprep.util.MAX_UPLOAD_BYTES
@@ -24,6 +25,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.File
 import kotlin.math.abs
 
@@ -82,7 +85,7 @@ class Repository(private val ctx: Context, private val db: AppDb, private val ap
     /** Finds the most relevant stored pages for a topic, fully on-device. */
     suspend fun context(subject: String, topic: String, limit: Int = 12): List<String> {
         val hits = ftsQuery(topic)?.let { runCatching { dao.searchChunks(subject, it, limit) }.getOrNull() }.orEmpty()
-        val chunks = hits.ifEmpty { if (topic.isBlank()) dao.randomChunks(subject, 8) else emptyList() }
+        val chunks = hits.ifEmpty { if (topic.isBlank()) dao.randomChunks(subject, limit.coerceAtMost(16)) else emptyList() }
         return chunks.map { "[${it.unit} / ${it.topic}]\n${it.text}" }
     }
 
@@ -124,6 +127,44 @@ class Repository(private val ctx: Context, private val db: AppDb, private val ap
             maxScore = questions.sumOf { it.marks }.toDouble()))
         dao.insertItems(ids.mapIndexed { i, q -> ExamItem(examId = examId, idx = i, questionId = q) })
         return examId
+    }
+
+    // ---------- Full national mock ----------
+
+    suspend fun createMock(stream: String, perPaper: Int, useAi: Boolean): Long =
+        dao.insert(Mock(stream = stream, questionsPerPaper = perPaper, useAi = useAi))
+
+    /** Returns the paper for this subject, generating it the first time (lazily, to save AI cost). */
+    suspend fun mockPaper(mockId: Long, subject: String): Long {
+        dao.mockPaper(mockId, subject)?.let { return it.id }
+        val mock = dao.mockNow(mockId) ?: error("Mock not found")
+        val questions = if (mock.useAi) {
+            val past = dao.randomPast(subject, listOf("mcq"), 12).map { it.stem }
+            api.mockPaper(MockPaperReq(subject, mock.stream, mock.questionsPerPaper, context(subject, "", 16), past, weakTopics(subject)))
+                .questions.map { it.toEntity(subject, 12, "ai", null) }
+                .let { qs -> qs.zip(dao.insertQuestions(qs)) { q, id -> q.copy(id = id) } }
+        } else {
+            dao.randomPast(subject, listOf("mcq"), mock.questionsPerPaper).also {
+                if (it.size < 10) error("Only ${it.size} saved $subject multiple-choice questions. Upload more past papers, or create the mock with AI.")
+            }
+        }
+        return mockLock.withLock { dao.mockPaper(mockId, subject)?.id ?: insertPaper(mockId, subject, questions) }
+    }
+
+    private val mockLock = Mutex()
+
+    private suspend fun insertPaper(mockId: Long, subject: String, questions: List<Question>): Long {
+        val examId = dao.insert(Exam(title = "$subject – national mock", subject = subject, mockId = mockId,
+            minutes = paperMinutes(subject, questions.size), maxScore = questions.sumOf { it.marks }.toDouble()))
+        dao.insertItems(questions.mapIndexed { i, q -> ExamItem(examId = examId, idx = i, questionId = q.id) })
+        return examId
+    }
+
+    /** Generates every remaining paper so the whole mock can then be sat offline. */
+    suspend fun prepareMock(mockId: Long): Long {
+        val mock = dao.mockNow(mockId) ?: error("Mock not found")
+        streamSubjects(mock.stream).forEach { mockPaper(mockId, it) }
+        return mockId
     }
 
     suspend fun start(examId: Long) {

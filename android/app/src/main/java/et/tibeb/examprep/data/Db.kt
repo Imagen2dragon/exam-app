@@ -9,6 +9,8 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.Transaction
 import androidx.room.Update
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -59,7 +61,17 @@ interface StudyDao {
     @Update suspend fun update(e: Exam)
     @Insert suspend fun insertItems(i: List<ExamItem>)
     @Update suspend fun update(i: ExamItem)
-    @Query("SELECT * FROM Exam ORDER BY createdAt DESC") fun exams(): Flow<List<Exam>>
+    @Query("SELECT * FROM Exam WHERE mockId IS NULL ORDER BY createdAt DESC") fun exams(): Flow<List<Exam>>
+    @Query("SELECT * FROM Exam ORDER BY createdAt DESC") fun allExams(): Flow<List<Exam>>
+
+    // National mocks
+    @Insert suspend fun insert(m: Mock): Long
+    @Query("SELECT * FROM Mock ORDER BY createdAt DESC") fun mocks(): Flow<List<Mock>>
+    @Query("SELECT * FROM Mock WHERE id = :id") fun mock(id: Long): Flow<Mock?>
+    @Query("SELECT * FROM Mock WHERE id = :id") suspend fun mockNow(id: Long): Mock?
+    @Query("SELECT * FROM Exam WHERE mockId = :id") fun mockPapers(id: Long): Flow<List<Exam>>
+    @Query("SELECT * FROM Exam WHERE mockId = :id AND subject = :subject LIMIT 1") suspend fun mockPaper(id: Long, subject: String): Exam?
+    @Query("SELECT COUNT(*) FROM Question WHERE docId = :id") fun questionCount(id: Long): Flow<Int>
     @Query("SELECT * FROM Exam WHERE id = :id") fun exam(id: Long): Flow<Exam?>
     @Query("SELECT * FROM Exam WHERE id = :id") suspend fun examNow(id: Long): Exam?
     @Query("SELECT * FROM ExamItem WHERE examId = :examId AND idx = :idx") suspend fun item(examId: Long, idx: Int): ExamItem?
@@ -88,8 +100,8 @@ interface StudyDao {
 
 @Database(
     entities = [Document::class, Chunk::class, ChunkFts::class, Question::class, Note::class,
-        Card::class, Exam::class, ExamItem::class],
-    version = 1,
+        Card::class, Exam::class, ExamItem::class, Mock::class],
+    version = 2,
     exportSchema = true,
 )
 abstract class AppDb : RoomDatabase() {
@@ -97,6 +109,15 @@ abstract class AppDb : RoomDatabase() {
 
     companion object {
         fun create(ctx: Context): AppDb =
-            Room.databaseBuilder(ctx, AppDb::class.java, "tibeb.db").build()
+            Room.databaseBuilder(ctx, AppDb::class.java, "tibeb.db").addMigrations(MIGRATION_1_2).build()
+
+        /** v0.1 -> v0.2: national mocks. Keeps all existing books, notes, cards and results. */
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS `Mock` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `stream` TEXT NOT NULL, `questionsPerPaper` INTEGER NOT NULL, `useAi` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL)")
+                db.execSQL("ALTER TABLE `Exam` ADD COLUMN `mockId` INTEGER")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_Exam_mockId` ON `Exam` (`mockId`)")
+            }
+        }
     }
 }

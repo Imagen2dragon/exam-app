@@ -4,6 +4,7 @@ Why a backend: an API key inside an APK can be extracted by anyone who has the A
 Here the key stays on the server; each phone gets its own revocable device token.
 Run:  uvicorn app:app --host 0.0.0.0 --port 8080   (put HTTPS in front, e.g. Caddy)
 """
+import asyncio
 import hmac
 import os
 import time
@@ -13,8 +14,8 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 import ai
-from schemas import (EXAM_SCHEMA, EXTRACT_SCHEMA, FLASH_SCHEMA, GRADE_SCHEMA, NOTES_SCHEMA,
-                     ExamReq, ExtractReq, FlashReq, GradeReq, NotesReq)
+from schemas import (BLUEPRINT_SCHEMA, EXAM_SCHEMA, EXTRACT_SCHEMA, FLASH_SCHEMA, GRADE_SCHEMA,
+                     NOTES_SCHEMA, ExamReq, ExtractReq, FlashReq, GradeReq, MockPaperReq, NotesReq)
 
 TOKENS = [t.strip() for t in os.environ.get("DEVICE_TOKENS", "").split(",") if len(t.strip()) >= 24]
 RATE = int(os.environ.get("RATE_LIMIT_PER_MIN", "8"))
@@ -123,6 +124,76 @@ async def exam(r: ExamReq, _: str = Depends(device)):
         f"Study material:\n{r.context_text()}"
     )
     return await ai.structured(prompt, EXAM_SCHEMA, effort="high", max_tokens=64_000)
+
+
+SECTION_MAX = 25  # questions per generation call: keeps each output well under the token limit
+
+
+def plan_sections(sections: list[dict], total: int) -> list[dict]:
+    """Normalise the AI blueprint so counts are positive, sum exactly to `total`, and no
+    section is larger than SECTION_MAX (big ones are split)."""
+    secs = [dict(s, count=max(1, int(s.get("count", 1)))) for s in sections if s.get("topics")]
+    if not secs:
+        secs = [{"grade": 12, "unit": "Full syllabus", "topics": "mixed national-exam topics", "count": total}]
+    scale = total / sum(s["count"] for s in secs)
+    for s in secs:
+        s["count"] = max(1, round(s["count"] * scale))
+    diff = total - sum(s["count"] for s in secs)
+    secs.sort(key=lambda s: -s["count"])
+    i = 0
+    while diff != 0:
+        s = secs[i % len(secs)]
+        if diff > 0 or s["count"] > 1:
+            s["count"] += 1 if diff > 0 else -1
+            diff += -1 if diff > 0 else 1
+        i += 1
+    out = []
+    for s in secs:
+        n = s["count"]
+        while n > 0:
+            out.append(dict(s, count=min(n, SECTION_MAX)))
+            n -= SECTION_MAX
+    return out
+
+
+@app.post("/v1/mock-paper")
+async def mock_paper(r: MockPaperReq, _: str = Depends(device)):
+    """One full national-exam paper: plan coverage like the real paper, then write sections in parallel."""
+    syllabus = ("the new Ethiopian curriculum: grades 10-12 in full, and only grade 9 topics that are "
+                "common to the old and new curricula")
+    plan = await ai.structured(
+        f"Plan the blueprint of a {r.count}-question Ethiopian Grade 12 national exam paper in {r.subject} "
+        f"({r.stream} science stream), covering {syllabus}. Split it into 4-10 sections by grade and unit, "
+        "weighting units the way the real national exam does (grade 12 and 11 units carry the most "
+        "weight). counts must sum to the total. topics is a comma-separated list of specific subtopics.\n"
+        f"Study material the student uploaded (shows which units they study):\n{r.context_text()[:20_000]}",
+        BLUEPRINT_SCHEMA, effort="low", max_tokens=8_000)
+    sections = plan_sections(plan["sections"], r.count)
+    past = "\n".join(f"- {q[:600]}" for q in r.past_questions) or "(none provided)"
+    weak = ", ".join(r.weak_topics) or "none recorded"
+    sem = asyncio.Semaphore(4)
+
+    async def write(sec: dict) -> list[dict]:
+        async with sem:
+            out = await ai.structured(
+                f"Write exactly {sec['count']} original multiple-choice questions for an Ethiopian Grade 12 "
+                f"national exam paper in {r.subject}. Section: grade {sec['grade']}, {sec['unit']}. "
+                f"Subtopics: {sec['topics']}. Match the real national exam: 4 options, one correct answer "
+                "letter A-D, distractors built from typical mistakes, a realistic mix of easy, medium and "
+                "hard items, each answerable in about a minute without a calculator unless the subject "
+                "needs arithmetic. Every question has a short step-by-step explanation. Use type 'mcq', "
+                "marks 1, numeric_answer 0, tolerance 0, unit ''. Spread the answer letters evenly.\n"
+                f"The student is weak at: {weak} - include a few on these if they fit this section.\n"
+                f"Past exam questions for style reference (do NOT copy):\n{past}\n\n"
+                f"Study material:\n{r.context_text()}",
+                EXAM_SCHEMA, effort="medium", max_tokens=32_000)
+            return [q for q in out["questions"] if q.get("type") == "mcq" and len(q.get("options", [])) == 4][: sec["count"]]
+
+    parts = await asyncio.gather(*(write(s) for s in sections))
+    questions = [q for part in parts for q in part]
+    if len(questions) < r.count * 0.8:
+        raise ai.AIError(502, "The paper came back incomplete. Please try again.")
+    return {"title": f"{r.subject} – national mock paper", "minutes": 0, "questions": questions}
 
 
 @app.post("/v1/grade")

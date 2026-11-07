@@ -49,6 +49,19 @@ class ExamReq(ContextReq):
     weak_topics: list[str] = Field(default_factory=list, max_length=10)
 
 
+class MockPaperReq(BaseModel):
+    subject: Subject
+    stream: Literal["natural", "social"]
+    count: int = Field(ge=10, le=120)
+    context: list[str] = Field(default_factory=list, max_length=24)
+    past_questions: list[str] = Field(default_factory=list, max_length=30)
+    weak_topics: list[str] = Field(default_factory=list, max_length=10)
+
+    def context_text(self) -> str:
+        parts = [c[:MAX_CHUNK] for c in self.context]
+        return "\n\n---\n\n".join(parts) if parts else "(no uploaded material - use the Ethiopian curriculum)"
+
+
 class GradeReq(BaseModel):
     subject: Subject
     question: str = Field(max_length=4_000)
@@ -94,6 +107,8 @@ EXTRACT_SCHEMA = _obj({
 NOTES_SCHEMA = _obj({"title": S, "markdown": S, "key_formulas": {"type": "array", "items": S}})
 FLASH_SCHEMA = _obj({"cards": {"type": "array", "items": _obj({"front": S, "back": S, "topic": S})}})
 EXAM_SCHEMA = _obj({"title": S, "minutes": I, "questions": {"type": "array", "items": QUESTION}})
+BLUEPRINT_SCHEMA = _obj({"sections": {"type": "array", "items": _obj({
+    "grade": I, "unit": S, "topics": S, "count": I})}})
 GRADE_SCHEMA = _obj({
     "score": N,
     "verdict": {"type": "string", "enum": ["correct", "partially_correct", "incorrect", "unreadable"]},

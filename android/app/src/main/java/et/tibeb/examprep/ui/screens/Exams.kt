@@ -79,6 +79,8 @@ import androidx.navigation.NavHostController
 import et.tibeb.examprep.data.ExamConfig
 import et.tibeb.examprep.data.ItemWithQuestion
 import et.tibeb.examprep.data.SUBJECTS
+import et.tibeb.examprep.data.percent
+import et.tibeb.examprep.ui.SectionTitle
 import et.tibeb.examprep.net.json
 import et.tibeb.examprep.ui.Busy
 import et.tibeb.examprep.ui.ChoiceChips
@@ -86,6 +88,7 @@ import et.tibeb.examprep.ui.EmptyState
 import et.tibeb.examprep.ui.ErrorText
 import et.tibeb.examprep.ui.LocalApp
 import et.tibeb.examprep.ui.ScoreRing
+import et.tibeb.examprep.ui.math
 import et.tibeb.examprep.ui.SubjectDot
 import et.tibeb.examprep.ui.TCard
 import et.tibeb.examprep.util.answersDir
@@ -102,11 +105,36 @@ private val LETTERS = listOf("A", "B", "C", "D", "E")
 fun ExamsScreen(nav: NavHostController) {
     val app = LocalApp.current
     val exams by app.repo.dao.exams().collectAsState(emptyList())
+    val mocks by app.repo.dao.mocks().collectAsState(emptyList())
+    val allExams by app.repo.dao.allExams().collectAsState(emptyList())
     Box(Modifier.fillMaxSize()) {
         LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), contentPadding = PaddingValues(bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            item { Text("Exams", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 20.dp)) }
-            if (exams.isEmpty()) item { EmptyState("No exams yet", "Tap New exam. Start with 10 questions to see how it works.") }
+            item {
+                Text("Exams", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 20.dp))
+                Spacer(Modifier.height(12.dp))
+                TCard(onClick = { nav.navigate("mocksetup") }, container = MaterialTheme.colorScheme.primary) {
+                    Text("Full national mock · 600", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onPrimary)
+                    Text("All six papers of your stream, timed, scored out of 600 against the 300 pass line.",
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f))
+                }
+            }
+            items(mocks, key = { "m${it.id}" }) { m ->
+                val papers = allExams.filter { it.mockId == m.id }
+                val done = papers.filter { it.finishedAt > 0 }
+                TCard(onClick = { nav.navigate("mock/${m.id}") }) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("National mock · ${if (m.stream == "social") "Social" else "Natural"} stream", style = MaterialTheme.typography.titleMedium)
+                            Text(DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(m.createdAt)) + " · ${done.size}/6 papers",
+                                style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Text("${done.sumOf { it.percent() }.toInt()}/600", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            }
+            if (exams.isNotEmpty()) item { SectionTitle("Practice exams") }
+            if (exams.isEmpty() && mocks.isEmpty()) item { EmptyState("No exams yet", "Tap New exam. Start with 10 questions to see how it works.") }
             items(exams, key = { it.id }) { e ->
                 TCard(onClick = { nav.navigate(if (e.finishedAt > 0) "result/${e.id}" else "exam/${e.id}") }) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -264,7 +292,7 @@ fun ExamScreen(nav: NavHostController, examId: Long) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("${TYPE_LABEL[q.type] ?: q.type} · ${q.marks} mark${if (q.marks > 1) "s" else ""} · ${q.topic}",
                 style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-            Text(q.stem, style = MaterialTheme.typography.titleLarge)
+            Text(math(q.stem), style = MaterialTheme.typography.titleLarge)
             val current = drafts[q.idx] ?: q.response
             val save = { v: String -> drafts[q.idx] = v; scope.launch { app.repo.answer(examId, q.idx, v) }; Unit }
             when (q.type) {
@@ -283,7 +311,7 @@ fun ExamScreen(nav: NavHostController, examId: Long) {
                                 }
                             }
                             Spacer(Modifier.width(12.dp))
-                            Text(opt, style = MaterialTheme.typography.bodyLarge)
+                            Text(math(opt), style = MaterialTheme.typography.bodyLarge)
                         }
                     }
                 }
@@ -379,7 +407,10 @@ fun ResultScreen(nav: NavHostController, examId: Long) {
                 ErrorText("$ungraded answer(s) still need AI grading (needs internet).")
                 Button(onClick = { app.repo.run("submit:$examId", "submit") { app.repo.retryGrading(examId) } }, modifier = Modifier.padding(top = 8.dp)) { Text("Retry grading") }
             }
-            Button(onClick = { nav.navigate("newexam?subject=${e.subject}") }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(top = 8.dp)) {
+            val mockId = e.mockId
+            if (mockId != null) Button(onClick = { nav.navigate("mock/$mockId") { popUpTo("exams") } },
+                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(top = 8.dp)) { Text("Back to national mock") }
+            else Button(onClick = { nav.navigate("newexam?subject=${e.subject}") }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(top = 8.dp)) {
                 Text("New exam – focus on my mistakes")
             }
         }
@@ -399,16 +430,16 @@ private fun ReviewItem(it: ItemWithQuestion) {
                 Box(contentAlignment = Alignment.Center) { Text("${it.idx + 1}", style = MaterialTheme.typography.labelMedium) }
             }
             Spacer(Modifier.width(10.dp))
-            Text(it.stem, style = MaterialTheme.typography.bodyLarge, maxLines = if (open) 20 else 2, modifier = Modifier.weight(1f))
+            Text(math(it.stem), style = MaterialTheme.typography.bodyLarge, maxLines = if (open) 20 else 2, modifier = Modifier.weight(1f))
             Text("%.1f/%d".format(it.earned, it.marks), style = MaterialTheme.typography.labelLarge)
         }
         if (open) Column(Modifier.padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            if (it.type == "mcq") options(it).forEachIndexed { i, o -> Text("${LETTERS[i]}. $o", style = MaterialTheme.typography.bodyMedium) }
-            Text("Your answer: " + it.response.ifBlank { if (it.imagePath.isNotBlank()) "(photo)" else "—" }, style = MaterialTheme.typography.bodyMedium)
-            Text("Correct: ${it.answer}${if (it.unit.isNotBlank() && it.type == "numeric") " ${it.unit}" else ""}", style = MaterialTheme.typography.titleSmall,
+            if (it.type == "mcq") options(it).forEachIndexed { i, o -> Text(math("${LETTERS[i]}. $o"), style = MaterialTheme.typography.bodyMedium) }
+            Text(math("Your answer: " + it.response.ifBlank { if (it.imagePath.isNotBlank()) "(photo)" else "—" }), style = MaterialTheme.typography.bodyMedium)
+            Text(math("Correct: ${it.answer}${if (it.unit.isNotBlank() && it.type == "numeric") " ${it.unit}" else ""}"), style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary)
-            if (it.feedback.isNotBlank()) Text(it.feedback, style = MaterialTheme.typography.bodyMedium)
-            if (it.explanation.isNotBlank()) Text(it.explanation, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (it.feedback.isNotBlank()) Text(math(it.feedback), style = MaterialTheme.typography.bodyMedium)
+            if (it.explanation.isNotBlank()) Text(math(it.explanation), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

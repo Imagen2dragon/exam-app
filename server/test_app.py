@@ -15,8 +15,19 @@ AUTH = {"Authorization": "Bearer " + "t" * 32}
 CALLS: list[dict] = []
 
 
+def _q(i):
+    return {"type": "mcq", "stem": f"q{i}", "options": ["a", "b", "c", "d"], "answer": "A", "numeric_answer": 0,
+            "tolerance": 0, "unit": "", "explanation": "", "topic": "t", "difficulty": "standard", "marks": 1}
+
+
 async def fake_structured(content, schema, **kw):
     CALLS.append({"content": content, "schema": schema, **kw})
+    if "sections" in schema["properties"]:
+        return {"sections": [{"grade": 12, "unit": "U1", "topics": "a, b", "count": 40},
+                             {"grade": 11, "unit": "U2", "topics": "c", "count": 20}]}
+    if "minutes" in schema["properties"] and "Write exactly" in str(content):
+        n = int(str(content).split("Write exactly ")[1].split()[0])
+        return {"title": "t", "minutes": 0, "questions": [_q(i) for i in range(n)]}
     if "score" in schema["properties"]:
         return {"score": 99, "verdict": "correct", "feedback": "ok", "mistakes": []}
     return {"title": "t", "minutes": 10, "questions": []}
@@ -79,3 +90,20 @@ def test_ai_error_maps_to_status():
 def test_body_size_limit():
     r = client.post("/v1/extract", headers={**AUTH, "content-length": str(40_000_000)}, content=b"{}")
     assert r.status_code == 413
+
+
+def test_plan_sections_sums_and_splits():
+    secs = server.plan_sections([{"grade": 12, "unit": "A", "topics": "x", "count": 70},
+                                 {"grade": 11, "unit": "B", "topics": "y", "count": 10}], 100)
+    assert sum(s["count"] for s in secs) == 100
+    assert all(1 <= s["count"] <= server.SECTION_MAX for s in secs)
+    assert server.plan_sections([], 30)[0]["count"] == 25  # fallback section, split at 25
+
+
+def test_mock_paper_builds_full_paper():
+    body = {"subject": "Chemistry", "stream": "natural", "count": 60}
+    r = client.post("/v1/mock-paper", json=body, headers=AUTH)
+    assert r.status_code == 200, r.text
+    assert len(r.json()["questions"]) == 60
+    assert CALLS[0]["effort"] == "low"  # blueprint call is cheap
+    assert client.post("/v1/mock-paper", json={**body, "count": 500}, headers=AUTH).status_code == 422

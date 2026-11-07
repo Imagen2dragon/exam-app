@@ -4,9 +4,10 @@ Android app plus a small backend. Upload textbooks, teacher guides and past nati
 - **Creates exams** (multiple choice, calculation, short answer, *draw-a-graph* with photo grading) at national, hard or very hard level, weighted toward his weak topics
 - **Makes notes** (summary, detailed, formula sheet, cheat sheet), in English or Amharic
 - **Makes flashcards** with spaced repetition (SM-2)
+- **Full national mock**: all 6 papers of the stream, scored out of 600 against the 300 pass line
 - **Works offline** for review, notes and exams built from saved past papers
 
-Release APK: **1.4 MB**, Android 7.0+ (minSdk 24), one permission (INTERNET).
+Release APK: **1.5 MB**, Android 7.0+ (minSdk 24), one permission (INTERNET).
 See [`docs/RESEARCH_AND_ROADMAP.md`](docs/RESEARCH_AND_ROADMAP.md) for the research, the security design and the next steps. Screenshots are in `docs/screenshots/`.
 
 ## 1. Run the server

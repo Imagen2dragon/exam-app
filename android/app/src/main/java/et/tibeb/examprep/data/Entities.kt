@@ -86,7 +86,7 @@ data class Card(
     val due: Long = System.currentTimeMillis(),
 )
 
-@Entity
+@Entity(indices = [Index("mockId")])
 data class Exam(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val title: String,
@@ -97,7 +97,31 @@ data class Exam(
     val finishedAt: Long = 0,
     val score: Double = 0.0,
     val maxScore: Double = 0.0,
+    val mockId: Long? = null,   // set when this exam is one paper of a full national mock
 )
+
+/** A full national mock: one paper per subject of the stream, each scored out of 100 (total 600). */
+@Entity
+data class Mock(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val stream: String,              // natural | social
+    val questionsPerPaper: Int,
+    val useAi: Boolean,
+    val createdAt: Long = System.currentTimeMillis(),
+)
+
+/**
+ * Paper timing. EAES does not publish per-paper question counts or times; reports say 60-120
+ * multiple-choice questions per paper. These per-question minutes are our estimate (more time
+ * for calculation-heavy papers) - adjust here when official figures are known.
+ */
+val MINUTES_PER_QUESTION = mapOf(
+    "Mathematics" to 2.0, "Physics" to 1.8, "Chemistry" to 1.6, "Economics" to 1.4,
+    "Biology" to 1.2, "English" to 1.2, "Scholastic Aptitude" to 1.5, "Geography" to 1.2, "History" to 1.2,
+)
+fun paperMinutes(subject: String, questions: Int) = kotlin.math.ceil(questions * (MINUTES_PER_QUESTION[subject] ?: 1.3)).toInt()
+fun streamSubjects(stream: String) = if (stream == "social") SOCIAL_STREAM else NATURAL_STREAM
+fun Exam.percent() = if (maxScore <= 0) 0.0 else score / maxScore * 100
 
 @Entity(primaryKeys = ["examId", "idx"], indices = [Index("questionId")])
 data class ExamItem(

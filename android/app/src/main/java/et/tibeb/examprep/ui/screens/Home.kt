@@ -46,7 +46,7 @@ fun HomeScreen(nav: NavHostController) {
     val settings by app.prefs.settings.collectAsState()
     val now = remember { System.currentTimeMillis() }
     val due by dao.dueCount(now).collectAsState(0)
-    val exams by dao.exams().collectAsState(emptyList())
+    val exams by dao.allExams().collectAsState(emptyList())
     val stats by dao.topicStats().collectAsState(emptyList())
     val subjects = if (settings.stream == "social") SOCIAL_STREAM else NATURAL_STREAM
     val finished = exams.filter { it.finishedAt > 0 && it.maxScore > 0 }

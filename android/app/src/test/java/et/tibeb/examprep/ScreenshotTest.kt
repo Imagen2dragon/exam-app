@@ -10,6 +10,7 @@ import et.tibeb.examprep.data.Chunk
 import et.tibeb.examprep.data.Document
 import et.tibeb.examprep.data.Exam
 import et.tibeb.examprep.data.ExamItem
+import et.tibeb.examprep.data.Mock
 import et.tibeb.examprep.data.Note
 import et.tibeb.examprep.data.Question
 import kotlinx.coroutines.runBlocking
@@ -27,7 +28,7 @@ import org.robolectric.annotation.GraphicsMode
 class ScreenshotTest {
     @get:Rule val rule = createAndroidComposeRule<MainActivity>()
 
-    private fun shot(name: String) { rule.waitForIdle(); rule.onRoot().captureRoboImage("../../docs/screenshots/$name.png") }
+    private fun shot(name: String) { rule.waitForIdle(); Thread.sleep(400); rule.waitForIdle(); rule.onRoot().captureRoboImage("../../docs/screenshots/$name.png") }
 
     private fun seed(): Long = runBlocking {
         val app = rule.activity.application as TibebApp
@@ -44,7 +45,7 @@ class ScreenshotTest {
             back = "A system at equilibrium shifts to oppose any change in concentration, temperature or pressure.", due = 0)))
         val qs = dao.insertQuestions(listOf(
             Question(subject = "Mathematics", grade = 12, topic = "Limits", type = "mcq",
-                stem = "What is the limit of (x² − 9)/(x − 3) as x approaches 3?", optionsJson = "[\"0\",\"3\",\"6\",\"Does not exist\"]",
+                stem = "Evaluate \$\\lim_{x \\to 3} \\frac{x^2 - 9}{x - 3}\$", optionsJson = "[\"0\",\"3\",\"6\",\"\$\\\\infty\$\"]",
                 answer = "C", explanation = "Factor: (x−3)(x+3)/(x−3) = x+3 → 6.", difficulty = "hard", marks = 1, source = "ai"),
             Question(subject = "Mathematics", grade = 12, topic = "Functions", type = "graph",
                 stem = "Sketch y = 1/(x − 2) + 1. Show both asymptotes and intercepts.", optionsJson = "[]",
@@ -60,8 +61,17 @@ class ScreenshotTest {
         dao.insertItems(qs.mapIndexed { i, q -> ExamItem(examId = done, idx = i, questionId = q, response = listOf("C", "", "30")[i],
             earned = listOf(1.0, 4.0, 0.0)[i], graded = true,
             feedback = listOf("", "Both asymptotes and intercepts are correct and labelled.", "")[i]) })
+        val mock = dao.insert(Mock(stream = "natural", questionsPerPaper = 60, useAi = true))
+        listOf("English" to 41.0, "Mathematics" to 38.0, "Physics" to 52.0, "Chemistry" to 47.0).forEach { (sub, sc) ->
+            dao.insert(Exam(title = "$sub – national mock", subject = sub, minutes = 72, maxScore = 60.0, score = sc,
+                startedAt = 1, finishedAt = 2, mockId = mock))
+        }
+        dao.insert(Exam(title = "Biology – national mock", subject = "Biology", minutes = 72, maxScore = 60.0, mockId = mock))
+        mockIdForTest = mock
         exam
     }
+
+    private var mockIdForTest = 0L
 
     @Test fun screens() {
         val examId = seed()
@@ -74,5 +84,7 @@ class ScreenshotTest {
         rule.onNodeWithText("Next").performClick(); shot("07_question_graph")
         rule.runOnUiThread { rule.activity.navForTest?.navigate("result/${examId + 1}") }; shot("08_result")
         rule.runOnUiThread { rule.activity.navForTest?.navigate("review") }; shot("09_flashcard")
+        rule.runOnUiThread { rule.activity.navForTest?.navigate("mocksetup") }; shot("10_mock_setup")
+        rule.runOnUiThread { rule.activity.navForTest?.navigate("mock/$mockIdForTest") }; shot("11_mock_hub")
     }
 }

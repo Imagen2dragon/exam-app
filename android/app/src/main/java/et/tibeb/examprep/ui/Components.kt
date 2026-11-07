@@ -38,6 +38,9 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.style.BaselineShift
+import androidx.compose.ui.unit.em
+import et.tibeb.examprep.util.parseMath
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import et.tibeb.examprep.TibebApp
@@ -150,19 +153,37 @@ fun Markdown(md: String) {
 
 private fun inline(s: String): AnnotatedString = buildAnnotatedString {
     var i = 0
+    val buf = StringBuilder()
+    fun flush() { appendMath(buf.toString()); buf.clear() }
     while (i < s.length) {
         when {
             s.startsWith("**", i) && s.indexOf("**", i + 2) > 0 -> {
+                flush()
                 val end = s.indexOf("**", i + 2)
-                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(s.substring(i + 2, end)) }
+                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { appendMath(s.substring(i + 2, end)) }
                 i = end + 2
             }
             s[i] == '`' && s.indexOf('`', i + 1) > 0 -> {
+                flush()
                 val end = s.indexOf('`', i + 1)
-                withStyle(SpanStyle(fontFamily = FontFamily.Monospace)) { append(s.substring(i + 1, end)) }
+                withStyle(SpanStyle(fontFamily = FontFamily.Monospace)) { appendMath(s.substring(i + 1, end)) }
                 i = end + 1
             }
-            else -> { append(s[i]); i++ }
+            else -> { buf.append(s[i]); i++ }
+        }
+    }
+    flush()
+}
+
+/** Appends text with simple LaTeX rendered as real superscripts/subscripts and symbols. */
+fun AnnotatedString.Builder.appendMath(t: String) {
+    parseMath(t).forEach { seg ->
+        if (seg.script == 0) append(seg.text)
+        else withStyle(SpanStyle(baselineShift = if (seg.script > 0) BaselineShift.Superscript else BaselineShift.Subscript, fontSize = 0.72.em)) {
+            append(seg.text)
         }
     }
 }
+
+/** Plain string -> styled math text, for question stems, options, answers and flashcards. */
+fun math(t: String): AnnotatedString = buildAnnotatedString { appendMath(t) }

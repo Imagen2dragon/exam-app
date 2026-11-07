@@ -31,6 +31,10 @@ import java.net.URL
     val subject: String, val topic: String, val grade: Int, val context: List<String>, val count: Int,
     val difficulty: String, val types: List<String>, val past_questions: List<String>, val weak_topics: List<String>,
 )
+@Serializable data class MockPaperReq(
+    val subject: String, val stream: String, val count: Int, val context: List<String>,
+    val past_questions: List<String>, val weak_topics: List<String>,
+)
 @Serializable data class GradeReq(
     val subject: String, val question: String, val reference_answer: String, val marks: Int,
     val student_text: String, val image_b64: String? = null, val image_mime: String = "image/jpeg",
@@ -47,6 +51,7 @@ class Api(private val baseUrl: () -> String, private val token: () -> String?) {
     suspend fun notes(r: NotesReq): NotesRes = post("/v1/notes", json.encodeToString(r), 240)
     suspend fun flashcards(r: FlashReq): FlashRes = post("/v1/flashcards", json.encodeToString(r), 180)
     suspend fun exam(r: ExamReq): ExamRes = post("/v1/exam", json.encodeToString(r), 600)
+    suspend fun mockPaper(r: MockPaperReq): ExamRes = post("/v1/mock-paper", json.encodeToString(r), 900)
     suspend fun grade(r: GradeReq): GradeRes = post("/v1/grade", json.encodeToString(r), 240)
 
     suspend fun ping(): Boolean = withContext(Dispatchers.IO) {

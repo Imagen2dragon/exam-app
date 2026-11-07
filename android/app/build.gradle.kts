@@ -15,8 +15,8 @@ android {
         applicationId = "et.tibeb.examprep"
         minSdk = 24          // Android 7.0+: covers almost every phone still in use in Ethiopia
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
         vectorDrawables.useSupportLibrary = true
     }
 
@@ -35,6 +35,7 @@ android {
     }
     buildFeatures { compose = true; buildConfig = true }
     testOptions { unitTests { isIncludeAndroidResources = true } }
+    sourceSets { getByName("debug").assets.srcDir("$projectDir/schemas") } // migration tests only; not in release
     packaging { resources.excludes += setOf("/META-INF/{AL2.0,LGPL2.1}", "DebugProbesKt.bin", "kotlin-tooling-metadata.json") }
     androidResources { localeFilters += listOf("en", "am") }
 }
@@ -66,5 +67,6 @@ dependencies {
     testImplementation("io.github.takahirom.roborazzi:roborazzi:1.76.0")
     testImplementation("io.github.takahirom.roborazzi:roborazzi-compose:1.76.0")
     testImplementation("androidx.compose.ui:ui-test-junit4")
+    testImplementation("androidx.room:room-testing:2.8.3")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

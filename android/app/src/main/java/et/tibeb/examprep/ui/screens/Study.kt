@@ -61,6 +61,7 @@ import et.tibeb.examprep.ui.EmptyState
 import et.tibeb.examprep.ui.ErrorText
 import et.tibeb.examprep.ui.LocalApp
 import et.tibeb.examprep.ui.Markdown
+import et.tibeb.examprep.ui.math
 import et.tibeb.examprep.ui.SectionTitle
 import et.tibeb.examprep.ui.SubjectDot
 import et.tibeb.examprep.ui.TCard
@@ -195,7 +196,7 @@ fun ReviewScreen(nav: NavHostController) {
                 Text("${card.subject} · ${card.topic}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Box(Modifier.fillMaxSize().semantics { liveRegion = LiveRegionMode.Polite }, contentAlignment = Alignment.Center) {
                     AnimatedContent(flipped, label = "flip") { f ->
-                        Text(if (f) card.back else card.front, style = if (f) MaterialTheme.typography.titleLarge else MaterialTheme.typography.headlineSmall,
+                        Text(math(if (f) card.back else card.front), style = if (f) MaterialTheme.typography.titleLarge else MaterialTheme.typography.headlineSmall,
                             textAlign = TextAlign.Center)
                     }
                 }

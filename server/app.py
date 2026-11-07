@@ -14,6 +14,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 import ai
+import usage
 from schemas import (BLUEPRINT_SCHEMA, EXAM_SCHEMA, EXPLAIN_SCHEMA, EXTRACT_SCHEMA, FLASH_SCHEMA,
                      GRADE_SCHEMA, NOTES_SCHEMA, ExamReq, ExplainReq, ExtractReq, FlashReq, GradeReq,
                      MockPaperReq, NotesReq)
@@ -36,10 +37,22 @@ async def limit_body(request: Request, call_next):
     return resp
 
 
-def device(authorization: str = Header(default="")) -> str:
+# These dependencies must stay `async def`: FastAPI runs plain `def` dependencies in a worker
+# thread, and the context variables set here would then not reach the endpoint.
+async def authenticated(request: Request, authorization: str = Header(default="")) -> str:
     token = authorization.removeprefix("Bearer ").strip()
     if not token or not any(hmac.compare_digest(token, t) for t in TOKENS):
         raise HTTPException(401, "Invalid device token")
+    # Usage is recorded against a hash of the token, never the token itself.
+    usage.current_device.set(usage.device_id(token))
+    usage.current_endpoint.set(request.url.path)
+    return token
+
+
+async def device(token: str = Depends(authenticated)) -> str:
+    """Auth + rate limit + daily AI budget, for every endpoint that calls Claude."""
+    if usage.over_budget(usage.device_id(token)):
+        raise HTTPException(402, "Today's AI budget for this device is used up. It resets at midnight.")
     q, now = _hits[token], time.monotonic()
     while q and now - q[0] > 60:
         q.popleft()
@@ -52,6 +65,13 @@ def device(authorization: str = Header(default="")) -> str:
 @app.exception_handler(ai.AIError)
 async def ai_error(_: Request, e: ai.AIError):
     return JSONResponse({"detail": e.message}, status_code=e.status)
+
+
+@app.get("/v1/usage")
+async def my_usage(token: str = Depends(authenticated)):
+    """Today's estimated AI spend for this device (shown in the app's Settings)."""
+    spent, requests = usage.spent_today(usage.device_id(token))
+    return {"today_usd": round(spent, 4), "budget_usd": usage.DAILY_BUDGET_USD, "requests_today": requests}
 
 
 @app.get("/healthz")

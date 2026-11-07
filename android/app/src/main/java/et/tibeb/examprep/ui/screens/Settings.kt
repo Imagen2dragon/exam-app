@@ -123,6 +123,15 @@ fun SettingsScreen(nav: NavHostController) {
                     scope.launch { status = if (ping(app)) strConnected else strNoAnswer }
                 }) { Text(stringResource(R.string.set_save_test)) }
                 status?.let { Text(it, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp)) }
+                val spend by androidx.compose.runtime.produceState<et.tibeb.examprep.net.UsageRes?>(null, s.serverUrl, s.hasToken) {
+                    value = Api({ app.prefs.settings.value.serverUrl }, { app.prefs.token() }, app::str).usage()
+                }
+                spend?.let { u ->
+                    Text(if (u.budget_usd > 0) stringResource(R.string.set_usage, "%.2f".format(u.today_usd), "%.2f".format(u.budget_usd), u.requests_today)
+                        else stringResource(R.string.set_usage_unlimited, "%.2f".format(u.today_usd), u.requests_today),
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 6.dp))
+                }
             }
             SectionTitle(stringResource(R.string.set_privacy))
             TCard {

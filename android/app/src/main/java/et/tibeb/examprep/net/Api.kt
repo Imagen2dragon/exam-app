@@ -23,6 +23,7 @@ import java.net.URL
 @Serializable data class ApiCard(val front: String, val back: String, val topic: String = "")
 @Serializable data class FlashRes(val cards: List<ApiCard>)
 @Serializable data class ExamRes(val title: String, val minutes: Int, val questions: List<ApiQuestion>)
+@Serializable data class UsageRes(val today_usd: Double, val budget_usd: Double, val requests_today: Int)
 @Serializable data class GradeRes(val score: Double, val verdict: String, val feedback: String, val mistakes: List<String> = emptyList())
 
 @Serializable data class PageReq(val mime: String, val data_b64: String)
@@ -71,6 +72,16 @@ open class Api(private val baseUrl: () -> String, private val token: () -> Strin
     open suspend fun explain(r: ExplainReq): ExplainRes = post("/v1/explain", json.encodeToString(r), 120)
     suspend fun grade(r: GradeReq): GradeRes = post("/v1/grade", json.encodeToString(r), 240)
 
+    /** Today's estimated AI spend for this device; null when offline or not configured. */
+    suspend fun usage(): UsageRes? = withContext(Dispatchers.IO) {
+        runCatching {
+            if (token().isNullOrBlank()) return@runCatching null
+            val c = open("/v1/usage", 15)
+            try { if (c.responseCode == 200) json.decodeFromString<UsageRes>(c.inputStream.bufferedReader().use { it.readText() }) else null }
+            finally { c.disconnect() }
+        }.getOrNull()
+    }
+
     suspend fun ping(): Boolean = withContext(Dispatchers.IO) {
         runCatching {
             val c = open("/healthz", 15)
@@ -118,6 +129,7 @@ open class Api(private val baseUrl: () -> String, private val token: () -> Strin
         val detail = runCatching { json.parseToJsonElement(body).jsonObject["detail"]?.jsonPrimitive?.content }.getOrNull()
         return when (code) {
             401 -> s(R.string.err_401)
+            402 -> s(R.string.err_402)
             413 -> s(R.string.err_413)
             422 -> s(R.string.err_422)
             429 -> s(R.string.err_429)

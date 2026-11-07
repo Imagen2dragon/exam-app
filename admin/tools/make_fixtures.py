@@ -44,6 +44,7 @@ progress = {
                          ("Waves practice", "Physics", 18, 20, False), ("Genetics", "Biology", 16, 20, False)])],
     "mocks": [{"created_at": now_ms - 9 * day, "total": 341.5, "papers_done": 6}, {"created_at": now_ms - day, "total": 118.0, "papers_done": 2}],
     "activity_days": [now_ms - k * day for k in range(0, 90) if k % 4 != 3 and k not in (12, 13, 40)],
+    "last_backup": now_ms - 5 * 3600 * 1000,
     "books": [{"title": t, "subject": s, "status": st} for t, s, st in [
         ("Grade 12 Mathematics – Unit 3", "Mathematics", "ready"), ("ESSLCE Physics 2016 E.C.", "Physics", "ready"),
         ("Biology G11 – Unit 2 (photos)", "Biology", "queued"), ("Chemistry 2015 E.C. exam", "Chemistry", "ready")]],

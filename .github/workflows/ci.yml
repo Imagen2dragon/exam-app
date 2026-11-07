@@ -79,3 +79,10 @@ jobs:
           docker run --rm -e TIBEB_DOMAIN=tibeb.example.com -v "$PWD/Caddyfile:/etc/caddy/Caddyfile:ro" \
             caddy:2.10-alpine caddy validate --config /etc/caddy/Caddyfile
           touch ../server/.env && TIBEB_DOMAIN=tibeb.example.com docker compose config -q
+
+  supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Backup bucket rules (setup.sql) only let each user reach their own folder
+        run: supabase/test/run.sh

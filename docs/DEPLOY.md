@@ -98,6 +98,10 @@ Sign in with the server address and the **admin** token. The phone sends a progr
 6 hours while it's online, and right after each finished exam, so the first one shows up once the phone
 has been connected for a while or has finished an exam. AI use shows up straight away.
 
+## 7. Optional: encrypted cloud backup
+
+So a lost phone doesn't mean lost work: follow [`SUPABASE.md`](SUPABASE.md) (about 15 minutes).
+
 ## Day-to-day
 
 | Task | Command (in `/opt/exam-app/deploy`) |

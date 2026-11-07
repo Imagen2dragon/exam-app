@@ -20,6 +20,7 @@ import kotlinx.serialization.json.Json
     val subjects: List<SubjectSummary> = emptyList(), val topics: List<TopicSummary> = emptyList(),
     val recent_exams: List<ExamSummary> = emptyList(), val mocks: List<MockSummary> = emptyList(),
     val activity_days: List<Long> = emptyList(), val books: List<BookSummary> = emptyList(),
+    val last_backup: Long? = null,
 )
 @Serializable data class Device(val device: String, val label: String = "", val last_seen: Double? = null,
                                 val latest: Progress? = null, val today_usd: Double = 0.0) {

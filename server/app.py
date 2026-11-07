@@ -5,7 +5,9 @@ Here the key stays on the server; each phone gets its own revocable device token
 Run:  see docs/DEPLOY.md (Docker + Caddy for HTTPS), or locally: uvicorn app:app --port 8080
 """
 import asyncio
+import base64
 import hmac
+import json
 import os
 import time
 from collections import defaultdict, deque
@@ -90,6 +92,35 @@ async def my_usage(token: str = Depends(authenticated)):
     """Today's estimated AI spend for this device (shown in the app's Settings)."""
     spent, requests = usage.spent_today(usage.device_id(token))
     return {"today_usd": round(spent, 4), "budget_usd": usage.DAILY_BUDGET_USD, "requests_today": requests}
+
+
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "").strip().rstrip("/")
+SUPABASE_KEY = os.environ.get("SUPABASE_PUBLISHABLE_KEY", "").strip()
+
+
+def is_public_key(key: str) -> bool:
+    """True only for a key that is safe inside an app: a publishable key, or a legacy anon JWT.
+    A secret key (sb_secret_... or a service_role JWT) bypasses all database rules, so it is refused."""
+    if key.startswith("sb_publishable_"):
+        return True
+    parts = key.split(".")
+    if len(parts) != 3:
+        return False
+    try:
+        payload = json.loads(base64.urlsafe_b64decode(parts[1] + "=" * (-len(parts[1]) % 4)))
+    except ValueError:
+        return False
+    return payload.get("role") == "anon"
+
+
+@app.get("/v1/config")
+async def config(_: str = Depends(authenticated)):
+    """Settings the phone needs besides this server: where its encrypted cloud backup lives.
+    Only the PUBLIC (publishable/anon) Supabase key is ever handed out - never a secret key."""
+    backup = None
+    if SUPABASE_URL.startswith("https://") and is_public_key(SUPABASE_KEY):
+        backup = {"url": SUPABASE_URL, "key": SUPABASE_KEY, "bucket": "backups"}
+    return {"backup": backup}
 
 
 @app.get("/healthz")

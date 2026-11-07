@@ -89,3 +89,8 @@ def test_progress_is_validated_and_needs_a_device_token():
 
 def test_unknown_device_progress_is_404():
     assert client.get("/v1/admin/devices/abcdef123456/progress", headers=ADMIN).status_code == 404
+
+
+def test_last_backup_time_reaches_the_admin():
+    client.post("/v1/progress", json=progress(last_backup=1794000500000), headers=PHONE)
+    assert client.get("/v1/admin/devices", headers=ADMIN).json()["devices"][0]["latest"]["last_backup"] == 1794000500000

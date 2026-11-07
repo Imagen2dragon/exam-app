@@ -38,6 +38,16 @@ class AdminTest {
         s.forget(); assertNull(s.load())
     }
 
+    @Test fun backupStatusWarnsWhenBackupsStop() {
+        val now = 1_800_000_000_000L
+        assertEquals("Cloud backup: not turned on in the phone's Settings" to false, backupStatus(Progress(), now))
+        assertEquals(false, backupStatus(Progress(last_backup = now - 86_400_000L), now).second)
+        val (text, late) = backupStatus(Progress(last_backup = now - 4 * 86_400_000L), now)
+        assertTrue(late && "check the phone" in text)
+        val real = json.decodeFromString<Devices>(fixture("devices")).devices.first().latest!!
+        assertTrue(real.last_backup != null)
+    }
+
     @Test fun niceScales() {
         assertEquals(20.0, niceCeil(16.8)); assertEquals(1.0, niceCeil(0.98)); assertEquals(250.0, niceCeil(201.0))
         assertEquals(0.5, niceCeil(0.47)); assertEquals(1.0, niceCeil(0.0))

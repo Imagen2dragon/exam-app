@@ -16,6 +16,7 @@ data class Settings(
     val language: String = "en",      // en | am
     val hasToken: Boolean = false,
     val onboarded: Boolean = false,
+    val examDate: Long = 0,           // 0 = not set
 )
 
 class Prefs(ctx: Context, private val secure: SecureStore) {
@@ -30,11 +31,12 @@ class Prefs(ctx: Context, private val secure: SecureStore) {
         language = p.getString("lang", "en") ?: "en",
         hasToken = !secure.get("token").isNullOrBlank(),
         onboarded = p.getBoolean("onboarded", false),
+        examDate = p.getLong("exam_date", 0),
     )
 
     fun save(s: Settings) {
         p.edit().putString("url", s.serverUrl.trim()).putString("stream", s.stream).putInt("grade", s.grade)
-            .putString("lang", s.language).putBoolean("onboarded", s.onboarded).apply()
+            .putString("lang", s.language).putBoolean("onboarded", s.onboarded).putLong("exam_date", s.examDate).apply()
         _s.value = load()
     }
 

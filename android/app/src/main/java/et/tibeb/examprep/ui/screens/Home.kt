@@ -2,6 +2,17 @@ package et.tibeb.examprep.ui.screens
 
 import androidx.compose.ui.res.stringResource
 import et.tibeb.examprep.R
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import et.tibeb.examprep.data.Planner
+import et.tibeb.examprep.ui.date
 import androidx.compose.ui.res.pluralStringResource
 import android.content.Intent
 import android.net.Uri
@@ -62,9 +73,28 @@ fun HomeScreen(nav: NavHostController) {
     val finished = exams.filter { it.finishedAt > 0 && it.maxScore > 0 }
     val avg = if (finished.isEmpty()) null else finished.takeLast(10).map { it.score / it.maxScore }.average()
 
+    val tick by app.repo.activityTick.collectAsState()
+    val today = Planner.startOfDay(now)
+    val examDate = settings.examDate.takeIf { it > 0 && Planner.daysUntil(it, now) >= 0 }
+    val streak = remember(tick, exams) { Planner.streak(app.repo.activeDays(), System.currentTimeMillis()) }
+    val plan = remember(tick, due, mistakes.size, exams, settings) {
+        val accuracy = finished.groupBy { it.subject }.mapValues { (_, es) -> es.map { it.score / it.maxScore }.average() }
+        Planner.plan(Planner.Input(
+            now = System.currentTimeMillis(), examDate = examDate, dueCards = due, reviewedToday = app.repo.reviewsToday(),
+            mistakes = mistakes.size, streamSubjects = subjects, subjectAccuracy = accuracy,
+            examsFinishedToday = finished.filter { it.finishedAt >= today }.map { it.subject },
+            lastMockFinished = finished.filter { it.mockId != null }.maxOfOrNull { it.finishedAt },
+        ))
+    }
+    var pickDate by remember { mutableStateOf(false) }
+
     val update by app.updates.available.collectAsState()
     val ctx = LocalContext.current
     LaunchedEffect(Unit) { app.updates.check() } // at most once a day
+
+    if (pickDate) ExamDateDialog(settings.examDate.takeIf { it > 0 }, { pickDate = false }) { picked ->
+        pickDate = false; app.prefs.save(settings.copy(examDate = picked ?: 0))
+    }
 
     LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp)) {
         item {
@@ -75,6 +105,8 @@ fun HomeScreen(nav: NavHostController) {
                 }
                 IconButton(onClick = { nav.navigate("settings") }) { Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.settings)) }
             }
+            Spacer(Modifier.height(12.dp))
+            Countdown(examDate, now) { pickDate = true }
             update?.let { v ->
                 Spacer(Modifier.height(12.dp))
                 TCard(onClick = { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(Updates.DOWNLOAD_URL))) },
@@ -96,12 +128,23 @@ fun HomeScreen(nav: NavHostController) {
             Spacer(Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 StatPill(avg?.let { "${(it * 100).toInt()}%" } ?: "–", stringResource(R.string.home_avg), Modifier.weight(1f))
-                StatPill("${finished.size}", stringResource(R.string.home_exams_done), Modifier.weight(1f))
+                StatPill(if (streak > 0) "🔥 $streak" else "0", stringResource(R.string.home_streak), Modifier.weight(1f))
                 StatPill("$due", stringResource(R.string.home_cards_due), Modifier.weight(1f))
             }
         }
         item {
             SectionTitle(stringResource(R.string.home_today))
+            if (plan.isNotEmpty()) {
+                PlanCard(plan) { item ->
+                    when (item.kind) {
+                        Planner.Kind.REVIEW_CARDS -> nav.navigate("review")
+                        Planner.Kind.FIX_MISTAKES -> nav.navigate("mistakes")
+                        Planner.Kind.PRACTICE_EXAM -> nav.navigate("newexam?subject=${item.subject}")
+                        Planner.Kind.FULL_MOCK -> nav.navigate("mocksetup")
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+            }
             TCard(onClick = { nav.navigate("newexam") }, container = MaterialTheme.colorScheme.primary) {
                 Text(stringResource(R.string.home_create_exam), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onPrimary)
                 Text(stringResource(R.string.home_create_exam_body), color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f))
@@ -116,15 +159,6 @@ fun HomeScreen(nav: NavHostController) {
                     Text(stringResource(R.string.home_make_notes), style = MaterialTheme.typography.titleMedium)
                     Text(stringResource(R.string.home_any_topic), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-            }
-        }
-        if (mistakes.isNotEmpty()) item {
-            Spacer(Modifier.height(10.dp))
-            TCard(onClick = { nav.navigate("mistakes") }, container = MaterialTheme.colorScheme.errorContainer) {
-                Text(stringResource(R.string.home_mistakes) + " · ${mistakes.size}", style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onErrorContainer)
-                Text(pluralStringResource(R.plurals.mistakes_waiting, mistakes.size, mistakes.size), style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onErrorContainer)
             }
         }
         val weak = stats.filter { it.attempted >= 2 }.sortedBy { it.accuracy }.take(4)
@@ -159,5 +193,55 @@ fun HomeScreen(nav: NavHostController) {
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun Countdown(examDate: Long?, now: Long, onPick: () -> Unit) {
+    if (examDate == null) {
+        TCard(onClick = onPick, container = MaterialTheme.colorScheme.primaryContainer) {
+            Text(stringResource(R.string.countdown_set), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.countdown_set_body), style = MaterialTheme.typography.bodyMedium)
+        }
+        return
+    }
+    val days = Planner.daysUntil(examDate, now)
+    TCard(onClick = onPick, container = MaterialTheme.colorScheme.primaryContainer) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("$days", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(14.dp))
+            Column {
+                Text(if (days == 0) stringResource(R.string.countdown_today)
+                    else pluralStringResource(R.plurals.countdown_days, days, days), style = MaterialTheme.typography.titleMedium)
+                Text(date(examDate), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlanCard(plan: List<Planner.Item>, onOpen: (Planner.Item) -> Unit) {
+    TCard {
+        plan.forEach { item ->
+            val label = when (item.kind) {
+                Planner.Kind.REVIEW_CARDS -> if (item.done) stringResource(R.string.plan_cards_done) else pluralStringResource(R.plurals.plan_cards, item.count, item.count)
+                Planner.Kind.FIX_MISTAKES -> pluralStringResource(R.plurals.plan_mistakes, item.count, item.count)
+                Planner.Kind.PRACTICE_EXAM -> stringResource(R.string.plan_exam, subjectName(item.subject))
+                Planner.Kind.FULL_MOCK -> stringResource(R.string.plan_mock)
+            }
+            Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(role = Role.Button) { onOpen(item) },
+                verticalAlignment = Alignment.CenterVertically) {
+                if (item.done) Icon(Icons.Filled.CheckCircle, null, tint = MaterialTheme.colorScheme.primary)
+                else SubjectDot(item.subject.ifBlank { "-" }, 20.dp)
+                Spacer(Modifier.width(12.dp))
+                Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f),
+                    textDecoration = if (item.done) TextDecoration.LineThrough else null,
+                    color = if (item.done) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface)
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        if (plan.all { it.done }) Text(stringResource(R.string.plan_all_done), style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary)
     }
 }

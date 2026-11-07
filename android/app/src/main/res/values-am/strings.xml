@@ -32,7 +32,6 @@
     <string name="home_connect_title">AIን ያገናኙ</string>
     <string name="home_connect_body">በAI የሚዘጋጁ ፈተናዎችን፣ ማስታወሻዎችንና እርማትን ለመጠቀም የሰርቨሩን አድራሻና የመሣሪያ ቶከንዎን ያስገቡ። የፍላሽ ካርድ ክለሳና የተቀመጡ ያለፉ ፈተናዎች ያለ እሱ ይሠራሉ።</string>
     <string name="home_avg">አማካይ ውጤት</string>
-    <string name="home_exams_done">የተሠሩ ፈተናዎች</string>
     <string name="home_cards_due">ለክለሳ የደረሱ</string>
     <string name="home_today">ዛሬ</string>
     <string name="home_create_exam">ፈተና አዘጋጅልኝ</string>
@@ -266,12 +265,33 @@
     <string name="home_mistakes">የሚታረሙ ስህተቶች</string>
     <string name="mistakes_exam_title">%1$s – የስህተቶች ድግግሞሽ</string>
     <string name="card_answer">መልስ፦ %1$s</string>
+    <string name="plan_cards_done">ፍላሽ ካርዶች ተከልሰዋል</string>
+    <string name="plan_exam">የልምምድ ፈተና፦ %1$s</string>
+    <string name="plan_mock">በዚህ ሳምንት ሙሉ ብሔራዊ ሙከራ</string>
+    <string name="plan_all_done">የዛሬው ሁሉ ተጠናቋል 🎉 ተጨማሪ ልምምድም ይቆጠራል።</string>
+    <string name="countdown_today">ብሔራዊ ፈተናው ዛሬ ነው። መልካም ዕድል! 🍀</string>
+    <string name="countdown_set">የፈተና ቀንዎን ያስገቡ</string>
+    <string name="countdown_set_body">ፈተናው እየቀረበ ሲመጣ የሚጠናከር የዕለት ዕቅድና የቀን ቆጠራ ያግኙ።</string>
+    <string name="home_streak">ተከታታይ ቀናት</string>
+    <string name="set_exam_date">የብሔራዊ ፈተና ቀን</string>
+    <string name="set_exam_date_none">አልተወሰነም</string>
+    <string name="set_change">ቀይር</string>
+    <string name="set_clear">አጽዳ</string>
+    <string name="ok">እሺ</string>
+    <plurals name="plan_cards">
+        <item quantity="one">%d ፍላሽ ካርድ ይከልሱ</item>
+        <item quantity="other">%d ፍላሽ ካርዶችን ይከልሱ</item>
+    </plurals>
+    <plurals name="plan_mistakes">
+        <item quantity="one">%d ስህተት ያርሙ</item>
+        <item quantity="other">%d ስህተቶችን ያርሙ</item>
+    </plurals>
     <plurals name="marks">
         <item quantity="one">%d ነጥብ</item>
         <item quantity="other">%d ነጥብ</item>
     </plurals>
-    <plurals name="mistakes_waiting">
-        <item quantity="one">የተሳሳቱት %d ጥያቄ ይጠብቃል። ያለ ኢንተርኔት እንደገና ይሞክሩት።</item>
-        <item quantity="other">የተሳሳቷቸው %d ጥያቄዎች ይጠብቃሉ። ያለ ኢንተርኔት እንደገና ይሞክሯቸው።</item>
+    <plurals name="countdown_days">
+        <item quantity="one">ለብሔራዊ ፈተና %d ቀን ቀርቷል</item>
+        <item quantity="other">ለብሔራዊ ፈተና %d ቀናት ቀርተዋል</item>
     </plurals>
 </resources>

@@ -2,6 +2,12 @@ package et.tibeb.examprep.ui.screens
 
 import androidx.compose.ui.res.stringResource
 import et.tibeb.examprep.R
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.SelectableDates
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
+import et.tibeb.examprep.ui.date
 import et.tibeb.examprep.BuildConfig
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.Switch
@@ -63,6 +69,7 @@ fun SettingsScreen(nav: NavHostController) {
     val ctx = LocalContext.current
     val activity = ctx.findActivity()
     var uiLang by remember { mutableStateOf(Lang.saved(ctx)) }
+    var pickDate by remember { mutableStateOf(false) }
     val strChecking = stringResource(R.string.set_checking)
     val strConnected = stringResource(R.string.set_connected)
     val strNoAnswer = stringResource(R.string.set_no_answer)
@@ -82,6 +89,16 @@ fun SettingsScreen(nav: NavHostController) {
                 }
                 Text(stringResource(R.string.label_grade), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 8.dp))
                 ChoiceChips(listOf(9, 10, 11, 12), setOf(s.grade), { stringResource(R.string.grade_long, it) }) { app.prefs.save(s.copy(grade = it)) }
+                Text(stringResource(R.string.set_exam_date), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(if (s.examDate > 0) date(s.examDate) else stringResource(R.string.set_exam_date_none),
+                        style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                    TextButton(onClick = { pickDate = true }) { Text(stringResource(R.string.set_change)) }
+                    if (s.examDate > 0) TextButton(onClick = { app.prefs.save(s.copy(examDate = 0)) }) { Text(stringResource(R.string.set_clear)) }
+                }
+                if (pickDate) ExamDateDialog(s.examDate.takeIf { it > 0 }, { pickDate = false }) { picked ->
+                    pickDate = false; app.prefs.save(s.copy(examDate = picked ?: 0))
+                }
                 Text(stringResource(R.string.set_app_lang), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 8.dp))
                 ChoiceChips(Lang.OPTIONS, setOf(uiLang), { langLabel(it) }) { tag ->
                     uiLang = tag
@@ -139,4 +156,32 @@ private fun langLabel(tag: String): String = when (tag) {
     "en" -> "English"
     "am" -> "አማርኛ"
     else -> stringResource(R.string.lang_system)
+}
+
+/** Material date picker for the national exam date; only today or later can be chosen. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun ExamDateDialog(initial: Long?, onDismiss: () -> Unit, onPicked: (Long?) -> Unit) {
+    val todayUtc = remember { java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
+        set(java.util.Calendar.HOUR_OF_DAY, 0); set(java.util.Calendar.MINUTE, 0); set(java.util.Calendar.SECOND, 0); set(java.util.Calendar.MILLISECOND, 0)
+    }.timeInMillis }
+    val state = rememberDatePickerState(
+        initialSelectedDateMillis = initial,
+        selectableDates = object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis >= todayUtc
+        },
+    )
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = {
+                // The picker returns midnight UTC; store local noon of that calendar day so the countdown is stable.
+                onPicked(state.selectedDateMillis?.let { utc ->
+                    val d = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply { timeInMillis = utc }
+                    java.util.Calendar.getInstance().apply { clear(); set(d.get(java.util.Calendar.YEAR), d.get(java.util.Calendar.MONTH), d.get(java.util.Calendar.DAY_OF_MONTH), 12, 0) }.timeInMillis
+                })
+            }) { Text(stringResource(R.string.ok)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    ) { DatePicker(state = state) }
 }
